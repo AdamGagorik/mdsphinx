@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "mdsphinx"
+version = "0.0.0"
+description = "Convert markdown to any output that Sphinx supports"
+authors = ["Adam Gagorik <adam.gagorik@gmail.com>"]
+readme = "README.md"
+license = "WTFPL"
+
+[tool.black]
+line-length = 120
+target-version = ['py311']
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+[build-system]
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+build-backend = "poetry_dynamic_versioning.backend"
+
+[tool.poetry.scripts]
+bany = 'mdsphinx.__main__:app'
+
+[tool.poetry-dynamic-versioning]
+enable = true
+
+[tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(message)s"
