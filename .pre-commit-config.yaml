@@ -81,3 +81,11 @@ repos:
   rev: 3.0.0
   hooks:
   - id: shellcheck
+- repo: local
+  hooks:
+  - id: mypy
+    name: mypy
+    entry: poetry run mypy
+    require_serial: true
+    language: system
+    types: [python]

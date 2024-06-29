@@ -20,9 +20,18 @@ typer = "^0.12.3"
 [tool.poetry.scripts]
 bany = 'mdsphinx.__main__:app'
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.2"
+mypy = "^1.10.1"
+
 [tool.black]
 line-length = 132
 target-version = ['py311']
+
+[tool.mypy]
+python_version = "3.12"
+show_error_codes = true
+strict = true
 
 [tool.pytest.ini_options]
 log_cli = true
