@@ -1,15 +1,22 @@
 import shelve
 import shutil
+import sys
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 from subprocess import run
+from typing import Annotated
 
 from typer import confirm
+from typer import Option
+from typer import Typer
 
 from mdsphinx.config import ENVIRONMENTS
 from mdsphinx.config import ENVIRONMENTS_REGISTRY
 from mdsphinx.logger import logger
+
+
+app = Typer(help="Manage environments.")
 
 
 @contextmanager
@@ -18,7 +25,14 @@ def environments() -> Generator[shelve.Shelf[Path], None, None]:
         yield shelf
 
 
-def add_env(key: str, path: Path) -> None:
+@app.command(name="add")
+def add_env(
+    key: Annotated[str, "The name of the environment."],
+    path: Annotated[Path, "The virtual environment folder."],
+) -> None:
+    """
+    Add a new environment to the registry.
+    """
     with environments() as db:
         if key in db:
             logger.warning(dict(action="add", key=key, message="overwriting key"))
@@ -27,7 +41,13 @@ def add_env(key: str, path: Path) -> None:
         db[key] = path
 
 
-def del_env(key: str) -> None:
+@app.command(name="del")
+def del_env(
+    key: Annotated[str, "The name of the environment."],
+) -> None:
+    """
+    Remove an environment from the registry.
+    """
     with environments() as db:
         if key in db:
             logger.info(dict(action="del", key=key))
@@ -36,7 +56,11 @@ def del_env(key: str) -> None:
             logger.warning(dict(action="del", key=key, message="key not found"))
 
 
+@app.command(name="list")
 def display_envs() -> None:
+    """
+    List all environments in the registry.
+    """
     with environments() as db:
         if db:
             for i, (key, path) in enumerate(db.items()):
@@ -45,7 +69,15 @@ def display_envs() -> None:
             logger.warning(dict(action="list", message="no environments found"))
 
 
-def create_env(key: str, python: Path, recreate: bool) -> None:
+@app.command(name="create")
+def create_env(
+    key: Annotated[str, "The environment name."],
+    python: Annotated[Path, Option(help="The python executable.")] = Path(sys.executable),
+    recreate: Annotated[bool, Option(help="Recreate the environment?")] = False,
+) -> None:
+    """
+    Create a new virtual environment with the latest version of sphinx.
+    """
     path = ENVIRONMENTS / f"venv.{key}"
     if path.exists():
         if recreate:
@@ -70,7 +102,13 @@ def create_env(key: str, python: Path, recreate: bool) -> None:
     add_env(key, path)
 
 
-def remove_env(key: str) -> bool:
+@app.command(name="remove")
+def remove_env(
+    key: Annotated[str, "The environment name."],
+) -> bool:
+    """
+    Remove an existing environment that was created by mdsphinx.
+    """
     path = ENVIRONMENTS / f"venv.{key}"
     if path.exists():
         if confirm(f"Remove {path}?", default=False):
