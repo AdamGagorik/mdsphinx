@@ -19,7 +19,7 @@ def cb(verbose: bool = False) -> None:
 
 
 app.add_typer(mdsphinx.cli.environment.app, name="env")
-app.command()(mdsphinx.cli.prepare.prepare)
+app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})(mdsphinx.cli.prepare.prepare)
 app.add_typer(mdsphinx.cli.render.app, name="render")
 
 

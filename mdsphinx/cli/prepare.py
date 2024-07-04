@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import dataclasses
 import functools
 import shutil
@@ -5,6 +7,7 @@ from pathlib import Path
 from typing import Annotated
 from typing import Any
 from typing import ClassVar
+from typing import Optional
 
 from jinja2 import Environment
 from typer import Option
@@ -14,8 +17,12 @@ from mdsphinx.tempdir import get_out_root
 from mdsphinx.tempdir import TMP_ROOT
 
 
+OptionalPath = Optional[Path]
+
+
 def prepare(
     inp: Annotated[Path, "The input path or directory with markdown files."],
+    context: Annotated[OptionalPath, Option(help="JSON/YAML variables to inject when rendering")] = None,
     tmp_root: Annotated[Path, Option(help="The directory for temporary output.")] = TMP_ROOT,
     overwrite: Annotated[bool, Option(help="Force creation of new output folder in --tmp-root?")] = False,
 ) -> None:
@@ -28,7 +35,8 @@ def prepare(
     if not inp.exists():
         raise FileNotFoundError(inp)
 
-    Renderer(
+    Renderer.create(
+        context=context,
         inp_path=inp if inp.is_file() else None,
         inp_root=inp if inp.is_dir() else inp.parent,
         out_root=get_out_root(inp.name, root=tmp_root, overwrite=overwrite),
@@ -78,6 +86,37 @@ class Renderer:
 
             if self.inp_path is not None:
                 break
+
+    @classmethod
+    def create(cls, context: str | Path | dict[str, Any] | None, **kwargs: Any) -> Renderer:
+        return cls(context=cls._load_context(context), **kwargs)
+
+    @classmethod
+    def _load_context(cls, context: str | Path | dict[str, Any] | None) -> dict[str, Any]:
+        if isinstance(context, dict):
+            return context
+
+        if isinstance(context, str):
+            raise NotImplementedError
+
+        if context is None:
+            return {}
+
+        match context.suffix.lower():
+            case ".json":
+                import json
+
+                with context.open("r") as stream:
+                    data: dict[str, Any] = json.load(stream)
+                    return {} if not isinstance(data, dict) else data
+            case ".yaml" | ".yml":
+                import yaml
+
+                with context.open("r") as stream:
+                    data = yaml.load(stream, Loader=yaml.FullLoader)
+                    return {} if not isinstance(data, dict) else data
+            case _:
+                raise ValueError(f"Can not load context from {context}")
 
     def _render_content(self, stem: Path | str, content: str, render: bool = False) -> None:
         out_path = self.out_root / stem
