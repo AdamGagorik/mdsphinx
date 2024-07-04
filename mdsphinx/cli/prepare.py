@@ -10,8 +10,10 @@ from typing import ClassVar
 from typing import Optional
 
 from jinja2 import Environment
+from jinja2 import StrictUndefined
 from typer import Option
 
+from mdsphinx.config import DT
 from mdsphinx.logger import logger
 from mdsphinx.tempdir import get_out_root
 from mdsphinx.tempdir import TMP_ROOT
@@ -45,7 +47,7 @@ def prepare(
 
 @functools.lru_cache(maxsize=1)
 def env() -> Environment:
-    return Environment()
+    return Environment(undefined=StrictUndefined)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -86,6 +88,9 @@ class Renderer:
 
             if self.inp_path is not None:
                 break
+
+    def __post_init__(self) -> None:
+        self.context.update(date=DT.date(), time=DT.time())
 
     @classmethod
     def create(cls, context: str | Path | dict[str, Any] | None, **kwargs: Any) -> Renderer:

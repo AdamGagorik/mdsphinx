@@ -1,6 +1,9 @@
 import os
+from datetime import datetime
+from datetime import UTC
 from pathlib import Path
 
+DT = datetime.now(UTC)
 
 CONFIG_ROOT: Path = Path(os.environ.get("MDSPHINX_CONFIG_ROOT", default=Path.home() / ".config" / "mdsphinx"))
 if CONFIG_ROOT.exists():
