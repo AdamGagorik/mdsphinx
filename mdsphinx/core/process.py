@@ -21,6 +21,7 @@ def process(
     inp: Annotated[Path, "The input path or directory with markdown files."],
     to: Annotated[Builder, Option(help="The desired output format.")] = Builder.pdf,
     tmp_root: Annotated[Path, Option(help="The directory for temporary output.")] = TMP_ROOT,
+    overwrite: Annotated[bool, Option(help="Force creation of new output folder in --tmp-root?")] = False,
 ) -> None:
     """
     Render markdown to the desired format.
@@ -32,4 +33,4 @@ def process(
     if not inp.exists():
         raise FileNotFoundError(inp)
 
-    prepare(inp=inp, tmp_root=tmp_root, overwrite=False)
+    prepare(inp=inp, tmp_root=tmp_root, overwrite=overwrite)
