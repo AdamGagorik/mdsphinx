@@ -2,9 +2,9 @@ import logging
 
 from typer import Typer
 
-import mdsphinx.cli.environment
-import mdsphinx.cli.prepare
-import mdsphinx.cli.process
+import mdsphinx.core.environment
+import mdsphinx.core.prepare
+import mdsphinx.core.process
 
 
 app = Typer(add_completion=False)
@@ -18,9 +18,9 @@ def cb(verbose: bool = False) -> None:
     logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO, format="%(levelname)-8s | %(message)s")
 
 
-app.add_typer(mdsphinx.cli.environment.app, name="env")
-app.command()(mdsphinx.cli.prepare.prepare)
-app.command()(mdsphinx.cli.process.process)
+app.add_typer(mdsphinx.core.environment.app, name="env")
+app.command()(mdsphinx.core.prepare.prepare)
+app.command()(mdsphinx.core.process.process)
 
 
 if __name__ == "__main__":

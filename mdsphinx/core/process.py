@@ -4,10 +4,10 @@ from typing import Annotated
 
 from typer import Option
 
+from mdsphinx.core.prepare import prepare
 from mdsphinx.logger import logger
 from mdsphinx.tempdir import get_out_root
 from mdsphinx.tempdir import TMP_ROOT
-from mdsphinx.cli.prepare import prepare
 
 
 class Builder(Enum):
