@@ -37,6 +37,9 @@ def prepare(
     if not inp.exists():
         raise FileNotFoundError(inp)
 
+    if context is None:
+        context = find_path("context.yml", "context.yaml", roots=(inp.parent, Path.cwd()))
+
     Renderer.create(
         context=context,
         inp_path=inp if inp.is_file() else None,
@@ -48,6 +51,16 @@ def prepare(
 @functools.lru_cache(maxsize=1)
 def env() -> Environment:
     return Environment(undefined=StrictUndefined)
+
+
+def find_path(*bases: str, roots: tuple[Path, ...] = ()) -> Path | None:
+    for root in roots:
+        for base in bases:
+            path = root / base
+            if path.exists():
+                return path
+    else:
+        return None
 
 
 @dataclasses.dataclass(frozen=True)

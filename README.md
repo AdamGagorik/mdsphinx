@@ -12,7 +12,7 @@ pipx install mdsphinx
 
 ```bash
 cd ./example
-mdsphinx env create example
+mdsphinx env create
 mdsphinx prepare example.md
-mdsphinx render example.pdf
+mdsphinx process example.md example.pdf
 ```

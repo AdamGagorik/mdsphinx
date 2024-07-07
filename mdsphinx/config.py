@@ -16,3 +16,5 @@ ENVIRONMENTS: Path = CONFIG_ROOT / "environments"
 ENVIRONMENTS.mkdir(parents=True, exist_ok=True)
 
 ENVIRONMENTS_REGISTRY: Path = CONFIG_ROOT / "registry"
+
+DEFAULT_ENVIRONMENT: str = "default"
