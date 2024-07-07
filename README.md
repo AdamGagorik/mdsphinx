@@ -13,6 +13,7 @@ pipx install mdsphinx
 ```bash
 cd ./example
 mdsphinx env create
-mdsphinx prepare example.md
-mdsphinx process example.md example.pdf
+mdsphinx process example.md --to pdf
+mdsphinx process example.md --to html
+mdsphinx process example.md --to confluence
 ```

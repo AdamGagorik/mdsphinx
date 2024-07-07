@@ -4,7 +4,7 @@ from typer import Typer
 
 import mdsphinx.cli.environment
 import mdsphinx.cli.prepare
-import mdsphinx.cli.render
+import mdsphinx.cli.process
 
 
 app = Typer(add_completion=False)
@@ -19,8 +19,8 @@ def cb(verbose: bool = False) -> None:
 
 
 app.add_typer(mdsphinx.cli.environment.app, name="env")
-app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})(mdsphinx.cli.prepare.prepare)
-app.add_typer(mdsphinx.cli.render.app, name="render")
+app.command()(mdsphinx.cli.prepare.prepare)
+app.command()(mdsphinx.cli.process.process)
 
 
 if __name__ == "__main__":
