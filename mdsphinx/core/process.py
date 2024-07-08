@@ -1,25 +1,34 @@
 from enum import Enum
 from pathlib import Path
+from subprocess import run
 from typing import Annotated
 
 from typer import Option
 
+from mdsphinx.config import DEFAULT_ENVIRONMENT
+from mdsphinx.core.environment import environments
 from mdsphinx.core.prepare import prepare
-from mdsphinx.logger import logger
 from mdsphinx.tempdir import get_out_root
 from mdsphinx.tempdir import TMP_ROOT
 
 
-class Builder(Enum):
+class Output(Enum):
     pdf = "pdf"
     html = "html"
-    latex = "latex"
-    confluence_page = "confluence"
+    confluence = "confluence"
+
+
+LOOKUP_BUILDER: dict[Output, str] = {
+    Output.pdf: "latex",
+    Output.html: "html",
+    Output.confluence: "confluence",
+}
 
 
 def process(
     inp: Annotated[Path, "The input path or directory with markdown files."],
-    to: Annotated[Builder, Option(help="The desired output format.")] = Builder.pdf,
+    to: Annotated[Output, Option(help="The desired output format.")] = Output.pdf,
+    env_name: Annotated[str, Option(help="The environment name.")] = DEFAULT_ENVIRONMENT,
     tmp_root: Annotated[Path, Option(help="The directory for temporary output.")] = TMP_ROOT,
     overwrite: Annotated[bool, Option(help="Force creation of new output folder in --tmp-root?")] = False,
 ) -> None:
@@ -33,4 +42,20 @@ def process(
     if not inp.exists():
         raise FileNotFoundError(inp)
 
-    prepare(inp=inp, tmp_root=tmp_root, overwrite=overwrite)
+    prepare(inp=inp, env_name=env_name, tmp_root=tmp_root, overwrite=overwrite)
+
+    with environments() as db:
+        env_path: Path = db[env_name]
+
+    # fmt: off
+    run([
+        str(env_path.joinpath("bin", "sphinx-build")),
+        "-b",
+        LOOKUP_BUILDER[to],
+        out_root.joinpath("source"),
+        out_root.joinpath("build", to.value),
+    ])
+    # fmt: on
+
+    if to == Output.pdf:
+        run(["tectonic", out_root.joinpath("build", to.value, "mdsphinx.tex")])

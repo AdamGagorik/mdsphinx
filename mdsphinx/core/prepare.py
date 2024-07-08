@@ -3,7 +3,9 @@ from __future__ import annotations
 import dataclasses
 import functools
 import shutil
+from collections.abc import Generator
 from pathlib import Path
+from subprocess import run
 from typing import Annotated
 from typing import Any
 from typing import ClassVar
@@ -13,7 +15,9 @@ from jinja2 import Environment
 from jinja2 import StrictUndefined
 from typer import Option
 
+from mdsphinx.config import DEFAULT_ENVIRONMENT
 from mdsphinx.config import DT
+from mdsphinx.core.environment import environments
 from mdsphinx.logger import logger
 from mdsphinx.tempdir import get_out_root
 from mdsphinx.tempdir import TMP_ROOT
@@ -25,6 +29,7 @@ OptionalPath = Optional[Path]
 def prepare(
     inp: Annotated[Path, "The input path or directory with markdown files."],
     context: Annotated[OptionalPath, Option(help="JSON/YAML variables to inject when rendering")] = None,
+    env_name: Annotated[str, Option(help="The environment name.")] = DEFAULT_ENVIRONMENT,
     tmp_root: Annotated[Path, Option(help="The directory for temporary output.")] = TMP_ROOT,
     overwrite: Annotated[bool, Option(help="Force creation of new output folder in --tmp-root?")] = False,
 ) -> None:
@@ -33,12 +38,21 @@ def prepare(
     """
     inp = inp.resolve()
     tmp_root = tmp_root.resolve()
+    out_root = get_out_root(inp.name, root=tmp_root)
 
     if not inp.exists():
         raise FileNotFoundError(inp)
 
+    with environments() as db:
+        env_path: Path = db[env_name]
+        logger.info(f"env_name: {env_name}")
+        logger.info(f"env_path: {env_path}")
+
     if context is None:
         context = find_path("context.yml", "context.yaml", roots=(inp.parent, Path.cwd()))
+
+    if not out_root.joinpath("source", "conf.py").exists():
+        run([*sphinx_quickstart(env_path), *master_doc(inp), str(out_root)])
 
     Renderer.create(
         context=context,
@@ -61,6 +75,23 @@ def find_path(*bases: str, roots: tuple[Path, ...] = ()) -> Path | None:
                 return path
     else:
         return None
+
+
+def master_doc(inp: Path) -> Generator[str, None, None]:
+    if inp.is_file():
+        yield from ("--master", inp.with_suffix("").name, "--suffix", inp.suffix)
+
+
+def sphinx_quickstart(bin_path: Path) -> Generator[str, None, None]:
+    yield str(bin_path.joinpath("bin", "sphinx-quickstart"))
+    yield from ("-p", "mdsphinx")
+    yield from ("-a", "mdsphinx")
+    yield from ("-v", "1.0.0")
+    yield "--no-batchfile"
+    yield "--no-makefile"
+    yield "--ext-mathjax"
+    yield "--sep"
+    yield "-q"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -145,25 +176,25 @@ class Renderer:
         else:
             rendered = content
 
-        logger.info(f"create: {out_path}")
+        logger.info(f"creating: {out_path}")
         out_path.parent.mkdir(parents=True, exist_ok=True)
         with out_path.open("w") as stream:
             stream.write(rendered)
 
     def _render_source(self, source: Path) -> None:
-        out_path = self.out_root / source.relative_to(self.inp_root)
+        out_path = self.out_root.joinpath("source") / source.relative_to(self.inp_root)
 
         with source.open("r") as stream:
             template = env().from_string(stream.read())
             rendered = template.render(**self.context)
 
-        logger.info(f"render: {out_path}")
+        logger.info(f"rendered: {out_path}")
         out_path.parent.mkdir(parents=True, exist_ok=True)
         with out_path.open("w") as stream:
             stream.write(rendered)
 
     def _render_resource(self, resource: Path) -> None:
-        out_path = self.out_root / resource.relative_to(self.inp_root)
+        out_path = self.out_root.joinpath("source") / resource.relative_to(self.inp_root)
         logger.info(f"mirror: {out_path}")
         out_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(resource, out_path)
