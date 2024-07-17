@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from subprocess import run
 from typing import Annotated
+from typing import Optional
 
 from typer import confirm
 from typer import Option
@@ -16,6 +17,9 @@ from mdsphinx.config import DEFAULT_ENVIRONMENT_PACKAGES
 from mdsphinx.config import ENVIRONMENTS
 from mdsphinx.config import ENVIRONMENTS_REGISTRY
 from mdsphinx.logger import logger
+
+
+MultipleStrings = Optional[list[str]]
 
 
 app = Typer(help="Manage environments.")
@@ -75,8 +79,9 @@ def display_envs() -> None:
 def create_env(
     name: Annotated[str, Option(help="The environment name.")] = DEFAULT_ENVIRONMENT,
     python: Annotated[Path, Option(help="The python executable.")] = Path(sys.executable),
-    packages: Annotated[tuple[str, ...], Option(help="Extra packages to install.")] = DEFAULT_ENVIRONMENT_PACKAGES,
+    packages: Annotated[MultipleStrings, Option("--package", help="Extra packages to install.")] = None,
     recreate: Annotated[bool, Option(help="Recreate the environment?")] = False,
+    prompt: Annotated[bool, Option(help="Prompt for removal?")] = True,
 ) -> None:
     """
     Create a new virtual environment with the latest version of sphinx.
@@ -84,7 +89,7 @@ def create_env(
     path = ENVIRONMENTS / f"venv.{name}"
     if path.exists():
         if recreate:
-            if not remove_env(name):
+            if not remove_env(name, prompt=prompt):
                 return
         else:
             logger.error(dict(action="create", name=name, path=path, message="environment already exists"))
@@ -93,16 +98,20 @@ def create_env(
     vpython = path / "bin" / "python"
     path.parent.mkdir(parents=True, exist_ok=True)
 
+    def echo_run(*args: str) -> None:
+        logger.info(dict(action="run", name=name, command=" ".join(args)))
+        run(args, check=True)
+
     # noinspection PyBroadException
     try:
-        run([str(python), "-m", "venv", str(path)], check=True)
-        run([str(vpython), "-m", "pip", "install", "pip", "--upgrade"], check=True)
-        run([str(vpython), "-m", "pip", "install", "sphinx", "--upgrade"], check=True)
-        for package in packages:
-            run([str(vpython), "-m", "pip", "install", package, "--upgrade"], check=True)
+        echo_run(str(python), "-m", "venv", str(path))
+        echo_run(str(vpython), "-m", "pip", "install", "pip", "--upgrade")
+        echo_run(str(vpython), "-m", "pip", "install", "sphinx", "--upgrade")
+        for package in packages if packages is not None else DEFAULT_ENVIRONMENT_PACKAGES:
+            echo_run(str(vpython), "-m", "pip", "install", package, "--upgrade")
     except Exception:
         logger.exception(dict(action="create", name=name, message="unhandled exception"))
-        remove_env(name)
+        remove_env(name, prompt=False)
 
     add_env(name, path)
 
@@ -110,13 +119,14 @@ def create_env(
 @app.command(name="remove")
 def remove_env(
     name: Annotated[str, Option(help="The environment name.")],
+    prompt: Annotated[bool, Option(help="Prompt for removal?")] = True,
 ) -> bool:
     """
     Remove an existing environment that was created by mdsphinx.
     """
     path = ENVIRONMENTS / f"venv.{name}"
     if path.exists():
-        if confirm(f"Remove {path}?", default=False):
+        if not prompt or confirm(f"Remove {path}?", default=False):
             logger.info(dict(action="remove", name=name, path=path, message="removing environment"))
             shutil.rmtree(path)
             del_env(name)

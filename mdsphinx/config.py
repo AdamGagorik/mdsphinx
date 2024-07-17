@@ -18,4 +18,4 @@ ENVIRONMENTS.mkdir(parents=True, exist_ok=True)
 ENVIRONMENTS_REGISTRY: Path = CONFIG_ROOT / "registry"
 
 DEFAULT_ENVIRONMENT: str = "default"
-DEFAULT_ENVIRONMENT_PACKAGES: tuple[str, ...] = ("myst-parser", "nbshinx", "furo", "sphinx-copybutton")
+DEFAULT_ENVIRONMENT_PACKAGES: tuple[str, ...] = ("myst-parser", "nbsphinx", "furo", "sphinx-copybutton")
