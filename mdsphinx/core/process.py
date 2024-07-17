@@ -5,7 +5,7 @@ from typing import Annotated
 from typer import Option
 
 from mdsphinx.config import DEFAULT_ENVIRONMENT
-from mdsphinx.core.environment import environments
+from mdsphinx.core.environment import VirtualEnvironment
 from mdsphinx.core.prepare import prepare
 from mdsphinx.logger import run
 from mdsphinx.tempdir import get_out_root
@@ -44,12 +44,11 @@ def process(
 
     prepare(inp=inp, env_name=env_name, tmp_root=tmp_root, overwrite=overwrite)
 
-    with environments() as db:
-        env_path: Path = db[env_name]
+    venv = VirtualEnvironment.from_db(env_name)
 
     # fmt: off
-    run(
-        str(env_path.joinpath("bin", "sphinx-build")),
+    venv.run(
+        "sphinx-build",
         "-b",
         LOOKUP_BUILDER[to],
         out_root.joinpath("source"),

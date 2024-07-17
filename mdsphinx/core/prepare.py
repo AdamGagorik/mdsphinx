@@ -16,7 +16,7 @@ from typer import Option
 
 from mdsphinx.config import DEFAULT_ENVIRONMENT
 from mdsphinx.config import NOW
-from mdsphinx.core.environment import environments
+from mdsphinx.core.environment import VirtualEnvironment
 from mdsphinx.logger import logger
 from mdsphinx.logger import run
 from mdsphinx.tempdir import get_out_root
@@ -43,16 +43,16 @@ def prepare(
     if not inp.exists():
         raise FileNotFoundError(inp)
 
-    with environments() as db:
-        env_path: Path = db[env_name]
-        logger.info(f"env_name: {env_name}")
-        logger.info(f"env_path: {env_path}")
+    venv = VirtualEnvironment.from_db(env_name)
 
     if context is None:
         context = find_path("context.yml", "context.yaml", roots=(inp.parent, Path.cwd()))
 
+    def has_package(name: str) -> bool:
+        return bool(run("pip", "show", name).returncode)
+
     if not out_root.joinpath("source", "conf.py").exists():
-        run(*sphinx_quickstart(env_path), *master_doc(inp), str(out_root))
+        venv.run(*sphinx_quickstart(), *master_doc(inp), str(out_root))
 
     Renderer.create(
         context=context,
@@ -82,8 +82,8 @@ def master_doc(inp: Path) -> Generator[str, None, None]:
         yield from ("--master", inp.with_suffix("").name, "--suffix", inp.suffix)
 
 
-def sphinx_quickstart(bin_path: Path) -> Generator[str, None, None]:
-    yield str(bin_path.joinpath("bin", "sphinx-quickstart"))
+def sphinx_quickstart() -> Generator[str, None, None]:
+    yield "sphinx-quickstart"
     yield from ("-p", "mdsphinx")
     yield from ("-a", "mdsphinx")
     yield from ("-v", "1.0.0")

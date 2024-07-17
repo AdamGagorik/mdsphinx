@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 import shelve
 import shutil
 import sys
 from collections.abc import Generator
 from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
+from subprocess import CompletedProcess
 from typing import Annotated
 from typing import Optional
 
@@ -23,6 +27,63 @@ MultipleStrings = Optional[list[str]]
 
 
 app = Typer(help="Manage environments.")
+
+
+@dataclass
+class VirtualEnvironment:
+    name: str
+    path: Path
+
+    @classmethod
+    def from_db(cls, name: str) -> VirtualEnvironment:
+        with environments() as db:
+            venv = cls(name, db[name])
+            logger.info(f"venv.name: {venv.name}")
+            logger.info(f"venv.path: {venv.path}")
+            return venv
+
+    @classmethod
+    def from_name(cls, name: str) -> VirtualEnvironment:
+        return cls(name, ENVIRONMENTS / f"venv.{name}")
+
+    @property
+    def python(self) -> Path:
+        return self.path / "bin" / "python"
+
+    def run(self, command: str | Path, *args: str | Path) -> CompletedProcess[str]:
+        return run(str(self.path / "bin" / command), *args)
+
+    def pyrun(self, package: str | Path, *args: str | Path) -> CompletedProcess[str]:
+        return run(str(self.python), "-m", package, *args)
+
+    def create(self, base_python: Path, recreate: bool = False, prompt: bool = True) -> bool:
+        if self.path.exists():
+            if recreate:
+                if not self.remove(prompt=prompt):
+                    return False
+            else:
+                logger.error(dict(action="create", name=self.name, path=self.path, message="environment already exists"))
+                return False
+
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        return not bool(run(str(base_python), "-m", "venv", str(self.path)).returncode)
+
+    def remove(self, prompt: bool = True) -> bool:
+        if self.path.exists():
+            if not prompt or confirm(f"Remove {self.path}?", default=False):
+                logger.info(dict(action="remove", name=self.name, path=self.path, message="removing environment"))
+                shutil.rmtree(self.path)
+                del_env(self.name)
+                return True
+            else:
+                logger.error(dict(action="remove", name=self.name, path=self.path, message="operation cancelled"))
+                return False
+        else:
+            logger.error(dict(action="remove", name=self.name, path=self.path, message="environment not found"))
+            return False
+
+    def install(self, package: str) -> None:
+        self.pyrun("pip", "install", package, "--upgrade")
 
 
 @contextmanager
@@ -86,50 +147,29 @@ def create_env(
     """
     Create a new virtual environment with the latest version of sphinx.
     """
-    path = ENVIRONMENTS / f"venv.{name}"
-    if path.exists():
-        if recreate:
-            if not remove_env(name, prompt=prompt):
-                return
-        else:
-            logger.error(dict(action="create", name=name, path=path, message="environment already exists"))
-            return
-
-    vpython = path / "bin" / "python"
-    path.parent.mkdir(parents=True, exist_ok=True)
+    venv = VirtualEnvironment.from_name(name)
+    if not venv.create(python, recreate=recreate, prompt=prompt):
+        return
 
     # noinspection PyBroadException
     try:
-        run(str(python), "-m", "venv", str(path))
-        run(str(vpython), "-m", "pip", "install", "pip", "--upgrade")
-        run(str(vpython), "-m", "pip", "install", "sphinx", "--upgrade")
+        venv.install("pip")
+        venv.install("sphinx")
         for package in packages if packages is not None else DEFAULT_ENVIRONMENT_PACKAGES:
-            run(str(vpython), "-m", "pip", "install", package, "--upgrade")
+            venv.install(package)
     except Exception:
         logger.exception(dict(action="create", name=name, message="unhandled exception"))
-        remove_env(name, prompt=False)
+        venv.remove(prompt=False)
 
-    add_env(name, path)
+    add_env(name, venv.path)
 
 
 @app.command(name="remove")
 def remove_env(
-    name: Annotated[str, Option(help="The environment name.")],
+    name: Annotated[str, Option(help="The environment name.")] = DEFAULT_ENVIRONMENT,
     prompt: Annotated[bool, Option(help="Prompt for removal?")] = True,
 ) -> bool:
     """
     Remove an existing environment that was created by mdsphinx.
     """
-    path = ENVIRONMENTS / f"venv.{name}"
-    if path.exists():
-        if not prompt or confirm(f"Remove {path}?", default=False):
-            logger.info(dict(action="remove", name=name, path=path, message="removing environment"))
-            shutil.rmtree(path)
-            del_env(name)
-            return True
-        else:
-            logger.error(dict(action="remove", name=name, path=path, message="operation cancelled"))
-            return False
-    else:
-        logger.error(dict(action="remove", name=name, path=path, message="environment not found"))
-        return False
+    return VirtualEnvironment.from_name(name).remove(prompt=prompt)
