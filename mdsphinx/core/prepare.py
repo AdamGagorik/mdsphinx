@@ -16,7 +16,7 @@ from jinja2 import StrictUndefined
 from typer import Option
 
 from mdsphinx.config import DEFAULT_ENVIRONMENT
-from mdsphinx.config import DT
+from mdsphinx.config import NOW
 from mdsphinx.core.environment import environments
 from mdsphinx.logger import logger
 from mdsphinx.tempdir import get_out_root
@@ -134,7 +134,7 @@ class Renderer:
                 break
 
     def __post_init__(self) -> None:
-        self.context.update(date=DT.date(), time=DT.time())
+        self.context.update(date=NOW.date(), time=NOW.time())
 
     @classmethod
     def create(cls, context: str | Path | dict[str, Any] | None, **kwargs: Any) -> Renderer:

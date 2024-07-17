@@ -3,7 +3,7 @@ from datetime import datetime
 from datetime import UTC
 from pathlib import Path
 
-DT = datetime.now(UTC)
+NOW = datetime.now(UTC)
 
 CONFIG_ROOT: Path = Path(os.environ.get("MDSPHINX_CONFIG_ROOT", default=Path.home() / ".config" / "mdsphinx"))
 if CONFIG_ROOT.exists():
@@ -18,3 +18,4 @@ ENVIRONMENTS.mkdir(parents=True, exist_ok=True)
 ENVIRONMENTS_REGISTRY: Path = CONFIG_ROOT / "registry"
 
 DEFAULT_ENVIRONMENT: str = "default"
+DEFAULT_ENVIRONMENT_PACKAGES: tuple[str, ...] = ("myst-parser", "nbshinx", "furo", "sphinx-copybutton")

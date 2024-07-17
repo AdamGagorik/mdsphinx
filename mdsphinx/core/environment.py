@@ -12,6 +12,7 @@ from typer import Option
 from typer import Typer
 
 from mdsphinx.config import DEFAULT_ENVIRONMENT
+from mdsphinx.config import DEFAULT_ENVIRONMENT_PACKAGES
 from mdsphinx.config import ENVIRONMENTS
 from mdsphinx.config import ENVIRONMENTS_REGISTRY
 from mdsphinx.logger import logger
@@ -74,6 +75,7 @@ def display_envs() -> None:
 def create_env(
     name: Annotated[str, Option(help="The environment name.")] = DEFAULT_ENVIRONMENT,
     python: Annotated[Path, Option(help="The python executable.")] = Path(sys.executable),
+    packages: Annotated[tuple[str, ...], Option(help="Extra packages to install.")] = DEFAULT_ENVIRONMENT_PACKAGES,
     recreate: Annotated[bool, Option(help="Recreate the environment?")] = False,
 ) -> None:
     """
@@ -96,6 +98,8 @@ def create_env(
         run([str(python), "-m", "venv", str(path)], check=True)
         run([str(vpython), "-m", "pip", "install", "pip", "--upgrade"], check=True)
         run([str(vpython), "-m", "pip", "install", "sphinx", "--upgrade"], check=True)
+        for package in packages:
+            run([str(vpython), "-m", "pip", "install", package, "--upgrade"], check=True)
     except Exception:
         logger.exception(dict(action="create", name=name, message="unhandled exception"))
         remove_env(name)
