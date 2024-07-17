@@ -18,7 +18,6 @@ from mdsphinx.config import DEFAULT_ENVIRONMENT
 from mdsphinx.config import NOW
 from mdsphinx.core.environment import VirtualEnvironment
 from mdsphinx.logger import logger
-from mdsphinx.logger import run
 from mdsphinx.tempdir import get_out_root
 from mdsphinx.tempdir import TMP_ROOT
 
@@ -48,11 +47,8 @@ def prepare(
     if context is None:
         context = find_path("context.yml", "context.yaml", roots=(inp.parent, Path.cwd()))
 
-    def has_package(name: str) -> bool:
-        return bool(run("pip", "show", name).returncode)
-
     if not out_root.joinpath("source", "conf.py").exists():
-        venv.run(*sphinx_quickstart(), *master_doc(inp), str(out_root))
+        venv.run(*sphinx_quickstart(tuple(extensions(venv))), *master_doc(inp), str(out_root))
 
     Renderer.create(
         context=context,
@@ -82,7 +78,12 @@ def master_doc(inp: Path) -> Generator[str, None, None]:
         yield from ("--master", inp.with_suffix("").name, "--suffix", inp.suffix)
 
 
-def sphinx_quickstart() -> Generator[str, None, None]:
+def extensions(venv: VirtualEnvironment) -> Generator[str, None, None]:
+    if venv.has_package("myst_parser"):
+        yield "myst_parser"
+
+
+def sphinx_quickstart(extra_extensions: tuple[str, ...]) -> Generator[str, None, None]:
     yield "sphinx-quickstart"
     yield from ("-p", "mdsphinx")
     yield from ("-a", "mdsphinx")
@@ -90,6 +91,7 @@ def sphinx_quickstart() -> Generator[str, None, None]:
     yield "--no-batchfile"
     yield "--no-makefile"
     yield "--ext-mathjax"
+    yield from (() if not extra_extensions else ("--extensions", ",".join(extra_extensions)))
     yield "--sep"
     yield "-q"
 

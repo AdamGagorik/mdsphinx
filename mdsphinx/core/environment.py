@@ -8,7 +8,9 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from subprocess import CompletedProcess
+from subprocess import DEVNULL
 from typing import Annotated
+from typing import Any
 from typing import Optional
 
 from typer import confirm
@@ -50,11 +52,11 @@ class VirtualEnvironment:
     def python(self) -> Path:
         return self.path / "bin" / "python"
 
-    def run(self, command: str | Path, *args: str | Path) -> CompletedProcess[str]:
-        return run(str(self.path / "bin" / command), *args)
+    def run(self, command: str | Path, *args: str | Path, **kwargs: Any) -> CompletedProcess[str]:
+        return run(str(self.path / "bin" / command), *args, **kwargs)
 
-    def pyrun(self, package: str | Path, *args: str | Path) -> CompletedProcess[str]:
-        return run(str(self.python), "-m", package, *args)
+    def pyrun(self, package: str | Path, *args: str | Path, **kwargs: Any) -> CompletedProcess[str]:
+        return run(str(self.python), "-m", package, *args, **kwargs)
 
     def create(self, base_python: Path, recreate: bool = False, prompt: bool = True) -> bool:
         if self.path.exists():
@@ -84,6 +86,9 @@ class VirtualEnvironment:
 
     def install(self, package: str) -> None:
         self.pyrun("pip", "install", package, "--upgrade")
+
+    def has_package(self, package: str) -> bool:
+        return not bool(self.pyrun("pip", "show", package, check=False, stdout=DEVNULL, stderr=DEVNULL, echo=False).returncode)
 
 
 @contextmanager
