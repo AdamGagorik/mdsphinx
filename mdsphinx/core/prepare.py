@@ -5,7 +5,6 @@ import functools
 import shutil
 from collections.abc import Generator
 from pathlib import Path
-from subprocess import run
 from typing import Annotated
 from typing import Any
 from typing import ClassVar
@@ -19,6 +18,7 @@ from mdsphinx.config import DEFAULT_ENVIRONMENT
 from mdsphinx.config import NOW
 from mdsphinx.core.environment import environments
 from mdsphinx.logger import logger
+from mdsphinx.logger import run
 from mdsphinx.tempdir import get_out_root
 from mdsphinx.tempdir import TMP_ROOT
 
@@ -52,7 +52,7 @@ def prepare(
         context = find_path("context.yml", "context.yaml", roots=(inp.parent, Path.cwd()))
 
     if not out_root.joinpath("source", "conf.py").exists():
-        run([*sphinx_quickstart(env_path), *master_doc(inp), str(out_root)])
+        run(*sphinx_quickstart(env_path), *master_doc(inp), str(out_root))
 
     Renderer.create(
         context=context,

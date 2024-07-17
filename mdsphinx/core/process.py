@@ -1,6 +1,5 @@
 from enum import Enum
 from pathlib import Path
-from subprocess import run
 from typing import Annotated
 
 from typer import Option
@@ -8,6 +7,7 @@ from typer import Option
 from mdsphinx.config import DEFAULT_ENVIRONMENT
 from mdsphinx.core.environment import environments
 from mdsphinx.core.prepare import prepare
+from mdsphinx.logger import run
 from mdsphinx.tempdir import get_out_root
 from mdsphinx.tempdir import TMP_ROOT
 
@@ -48,14 +48,14 @@ def process(
         env_path: Path = db[env_name]
 
     # fmt: off
-    run([
+    run(
         str(env_path.joinpath("bin", "sphinx-build")),
         "-b",
         LOOKUP_BUILDER[to],
         out_root.joinpath("source"),
         out_root.joinpath("build", to.value),
-    ])
+    )
     # fmt: on
 
     if to == Output.pdf:
-        run(["tectonic", out_root.joinpath("build", to.value, "mdsphinx.tex")])
+        run("tectonic", out_root.joinpath("build", to.value, "mdsphinx.tex"))

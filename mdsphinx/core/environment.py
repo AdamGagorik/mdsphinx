@@ -4,7 +4,6 @@ import sys
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from subprocess import run
 from typing import Annotated
 from typing import Optional
 
@@ -17,6 +16,7 @@ from mdsphinx.config import DEFAULT_ENVIRONMENT_PACKAGES
 from mdsphinx.config import ENVIRONMENTS
 from mdsphinx.config import ENVIRONMENTS_REGISTRY
 from mdsphinx.logger import logger
+from mdsphinx.logger import run
 
 
 MultipleStrings = Optional[list[str]]
@@ -98,17 +98,13 @@ def create_env(
     vpython = path / "bin" / "python"
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    def echo_run(*args: str) -> None:
-        logger.info(dict(action="run", name=name, command=" ".join(args)))
-        run(args, check=True)
-
     # noinspection PyBroadException
     try:
-        echo_run(str(python), "-m", "venv", str(path))
-        echo_run(str(vpython), "-m", "pip", "install", "pip", "--upgrade")
-        echo_run(str(vpython), "-m", "pip", "install", "sphinx", "--upgrade")
+        run(str(python), "-m", "venv", str(path))
+        run(str(vpython), "-m", "pip", "install", "pip", "--upgrade")
+        run(str(vpython), "-m", "pip", "install", "sphinx", "--upgrade")
         for package in packages if packages is not None else DEFAULT_ENVIRONMENT_PACKAGES:
-            echo_run(str(vpython), "-m", "pip", "install", package, "--upgrade")
+            run(str(vpython), "-m", "pip", "install", package, "--upgrade")
     except Exception:
         logger.exception(dict(action="create", name=name, message="unhandled exception"))
         remove_env(name, prompt=False)
