@@ -1,3 +1,4 @@
+import webbrowser
 from enum import Enum
 from pathlib import Path
 from typing import Annotated
@@ -8,6 +9,7 @@ from mdsphinx.config import DEFAULT_ENVIRONMENT
 from mdsphinx.config import TMP_ROOT
 from mdsphinx.core.environment import VirtualEnvironment
 from mdsphinx.core.prepare import prepare
+from mdsphinx.logger import logger
 from mdsphinx.logger import run
 from mdsphinx.tempdir import get_out_root
 
@@ -31,6 +33,8 @@ def process(
     env_name: Annotated[str, Option(help="The environment name.")] = DEFAULT_ENVIRONMENT,
     tmp_root: Annotated[Path, Option(help="The directory for temporary output.")] = TMP_ROOT,
     overwrite: Annotated[bool, Option(help="Force creation of new output folder in --tmp-root?")] = False,
+    remake_config: Annotated[bool, Option(help="Remove existing sphinx conf.py file?")] = False,
+    show_output: Annotated[bool, Option(help="Open the generated output file?")] = False,
 ) -> None:
     """
     Render markdown to the desired format.
@@ -42,7 +46,7 @@ def process(
     if not inp.exists():
         raise FileNotFoundError(inp)
 
-    prepare(inp=inp, env_name=env_name, tmp_root=tmp_root, overwrite=overwrite)
+    prepare(inp=inp, env_name=env_name, tmp_root=tmp_root, overwrite=overwrite, remake_config=remake_config)
 
     venv = VirtualEnvironment.from_db(env_name)
 
@@ -58,3 +62,13 @@ def process(
 
     if to == Output.pdf:
         run("tectonic", out_root.joinpath("build", to.value, "mdsphinx.tex"))
+
+    if show_output:
+        match to:
+            case Output.html:
+                url = out_root.joinpath("build", to.value, inp.with_suffix(".html").name)
+                if url.exists():
+                    logger.info(dict(action="open", url=url))
+                    webbrowser.open(url.as_uri(), new=2)
+                else:
+                    raise FileNotFoundError(url)
