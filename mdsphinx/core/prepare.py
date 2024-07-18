@@ -3,7 +3,6 @@ from __future__ import annotations
 import dataclasses
 import functools
 import shutil
-from collections.abc import Generator
 from pathlib import Path
 from typing import Annotated
 from typing import Any
@@ -16,11 +15,11 @@ from typer import Option
 
 from mdsphinx.config import DEFAULT_ENVIRONMENT
 from mdsphinx.config import NOW
+from mdsphinx.config import TMP_ROOT
 from mdsphinx.core.environment import VirtualEnvironment
+from mdsphinx.core.quickstart import sphinx_quickstart
 from mdsphinx.logger import logger
 from mdsphinx.tempdir import get_out_root
-from mdsphinx.tempdir import TMP_ROOT
-
 
 OptionalPath = Optional[Path]
 
@@ -43,12 +42,15 @@ def prepare(
         raise FileNotFoundError(inp)
 
     venv = VirtualEnvironment.from_db(env_name)
+    sphinx_quickstart(inp, out_root, venv, remove=True)
 
     if context is None:
-        context = find_path("context.yml", "context.yaml", roots=(inp.parent, Path.cwd()))
-
-    if not out_root.joinpath("source", "conf.py").exists():
-        venv.run(*sphinx_quickstart(tuple(extensions(venv))), *master_doc(inp), str(out_root))
+        for root in (inp.parent, Path.cwd()):
+            for base in ("context.yml", "context.yaml"):
+                path = root / base
+                if path.exists():
+                    context = path
+                    break
 
     Renderer.create(
         context=context,
@@ -61,39 +63,6 @@ def prepare(
 @functools.lru_cache(maxsize=1)
 def env() -> Environment:
     return Environment(undefined=StrictUndefined)
-
-
-def find_path(*bases: str, roots: tuple[Path, ...] = ()) -> Path | None:
-    for root in roots:
-        for base in bases:
-            path = root / base
-            if path.exists():
-                return path
-    else:
-        return None
-
-
-def master_doc(inp: Path) -> Generator[str, None, None]:
-    if inp.is_file():
-        yield from ("--master", inp.with_suffix("").name, "--suffix", inp.suffix)
-
-
-def extensions(venv: VirtualEnvironment) -> Generator[str, None, None]:
-    if venv.has_package("myst_parser"):
-        yield "myst_parser"
-
-
-def sphinx_quickstart(extra_extensions: tuple[str, ...]) -> Generator[str, None, None]:
-    yield "sphinx-quickstart"
-    yield from ("-p", "mdsphinx")
-    yield from ("-a", "mdsphinx")
-    yield from ("-v", "1.0.0")
-    yield "--no-batchfile"
-    yield "--no-makefile"
-    yield "--ext-mathjax"
-    yield from (() if not extra_extensions else ("--extensions", ",".join(extra_extensions)))
-    yield "--sep"
-    yield "-q"
 
 
 @dataclasses.dataclass(frozen=True)

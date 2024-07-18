@@ -5,11 +5,11 @@ from typing import Annotated
 from typer import Option
 
 from mdsphinx.config import DEFAULT_ENVIRONMENT
+from mdsphinx.config import TMP_ROOT
 from mdsphinx.core.environment import VirtualEnvironment
 from mdsphinx.core.prepare import prepare
 from mdsphinx.logger import run
 from mdsphinx.tempdir import get_out_root
-from mdsphinx.tempdir import TMP_ROOT
 
 
 class Output(Enum):

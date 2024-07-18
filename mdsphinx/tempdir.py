@@ -2,11 +2,9 @@ import re
 from collections.abc import Generator
 from datetime import datetime
 from pathlib import Path
-from tempfile import gettempdir
 from tempfile import mkdtemp
 
-
-TMP_ROOT = Path(gettempdir())
+from mdsphinx.config import TMP_ROOT
 
 
 def get_out_root(key: str, root: Path = TMP_ROOT, overwrite: bool = False) -> Path:

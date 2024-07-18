@@ -2,8 +2,10 @@ import os
 from datetime import datetime
 from datetime import UTC
 from pathlib import Path
+from tempfile import gettempdir
 
 NOW = datetime.now(UTC)
+TMP_ROOT = Path(gettempdir())
 
 CONFIG_ROOT: Path = Path(os.environ.get("MDSPHINX_CONFIG_ROOT", default=Path.home() / ".config" / "mdsphinx"))
 if CONFIG_ROOT.exists():
@@ -19,3 +21,6 @@ ENVIRONMENTS_REGISTRY: Path = CONFIG_ROOT / "registry"
 
 DEFAULT_ENVIRONMENT: str = "default"
 DEFAULT_ENVIRONMENT_PACKAGES: tuple[str, ...] = ("myst-parser", "nbsphinx", "furo", "sphinx-copybutton")
+
+MDSPHINX_ROOT = Path(__file__).parent
+TEMPLATE_ROOT = MDSPHINX_ROOT / "templates"
