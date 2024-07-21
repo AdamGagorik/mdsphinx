@@ -30,7 +30,7 @@ def prepare(
     env_name: Annotated[str, Option(help="The environment name.")] = DEFAULT_ENVIRONMENT,
     tmp_root: Annotated[Path, Option(help="The directory for temporary output.")] = TMP_ROOT,
     overwrite: Annotated[bool, Option(help="Force creation of new output folder in --tmp-root?")] = False,
-    remake_config: Annotated[bool, Option(help="Remove existing sphinx conf.py file?")] = False,
+    regenerate: Annotated[bool, Option(help="Remove existing sphinx conf.py file?")] = False,
 ) -> None:
     """
     Preprocess the input files.
@@ -43,7 +43,7 @@ def prepare(
         raise FileNotFoundError(inp)
 
     venv = VirtualEnvironment.from_db(env_name)
-    sphinx_quickstart(inp, out_root, venv, remove=remake_config)
+    sphinx_quickstart(inp, out_root, venv, remove=regenerate)
 
     if context is None:
         for root in (inp.parent, Path.cwd()):
@@ -53,12 +53,18 @@ def prepare(
                     context = path
                     break
 
-    Renderer.create(
+    renderer = Renderer.create(
         context=context,
         inp_path=inp if inp.is_file() else None,
         inp_root=inp if inp.is_dir() else inp.parent,
         out_root=get_out_root(inp.name, root=tmp_root, overwrite=overwrite),
-    ).render()
+    )
+
+    renderer.render()
+    renderer.create_index()
+
+    if not renderer.index.exists():
+        raise FileNotFoundError(renderer.index)
 
 
 @functools.lru_cache(maxsize=1)
@@ -76,6 +82,11 @@ class Renderer:
     SOURCES: ClassVar[frozenset[str]] = frozenset({".md", ".markdown", ".rst", ".txt"})
     RESOURCES: ClassVar[frozenset[str]] = frozenset({".png", ".jpg", ".jpeg", ".gif", ".svg", ".pdf"})
     EXCLUDED_NAMES: ClassVar[frozenset[str]] = frozenset({".git", ".github", ".vscode", "__pycache__", ".venv", "venv", ".idea"})
+
+    @property
+    def index(self) -> Path:
+        path = self.out_root.joinpath("source", "index.md")
+        return path if path.exists() else path.with_suffix(".rst")
 
     def render(self) -> None:
         logger.info("inp_path: %s", self.inp_path)
@@ -104,6 +115,25 @@ class Renderer:
 
             if self.inp_path is not None:
                 break
+
+    def create_index(self) -> None:
+        if any(
+            [
+                self.inp_path is not None and self.inp_path.is_file() and self.inp_path.name == "index",
+                self.inp_root is not None and self.inp_root.is_dir() and self.inp_root.joinpath("index.md").exists(),
+                self.inp_root is not None and self.inp_root.is_dir() and self.inp_root.joinpath("index.rst").exists(),
+            ]
+        ):
+            return
+
+        with self.index.open("w") as stream:
+            stream.write(".. only:: latex or builder_html\n\n")
+            stream.write("   Index\n")
+            stream.write("   =====\n")
+            stream.write(".. toctree::\n\n")
+            for path in sorted(self.out_root.joinpath("source").glob("*.md")):
+                if path.with_suffix("").name != "index":
+                    stream.write(f"   {path.with_suffix('').name}\n")
 
     def __post_init__(self) -> None:
         self.context.update(date=NOW.date(), time=NOW.time())
