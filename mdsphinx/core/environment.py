@@ -147,13 +147,14 @@ def create_env(
     python: Annotated[Path, Option(help="The python executable.")] = Path(sys.executable),
     packages: Annotated[MultipleStrings, Option("--package", help="Extra packages to install.")] = None,
     recreate: Annotated[bool, Option(help="Recreate the environment?")] = False,
+    upgrade: Annotated[bool, Option(help="Upgrade existing libraries?")] = False,
     prompt: Annotated[bool, Option(help="Prompt for removal?")] = True,
 ) -> None:
     """
     Create a new virtual environment with the latest version of sphinx.
     """
     venv = VirtualEnvironment.from_name(name)
-    if not venv.create(python, recreate=recreate, prompt=prompt):
+    if not venv.create(python, recreate=recreate, prompt=prompt) and not upgrade:
         return
 
     # noinspection PyBroadException
