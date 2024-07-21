@@ -20,7 +20,14 @@ ENVIRONMENTS.mkdir(parents=True, exist_ok=True)
 ENVIRONMENTS_REGISTRY: Path = CONFIG_ROOT / "registry"
 
 DEFAULT_ENVIRONMENT: str = "default"
-DEFAULT_ENVIRONMENT_PACKAGES: tuple[str, ...] = ("myst-parser", "nbsphinx", "furo", "sphinx-copybutton")
+DEFAULT_ENVIRONMENT_PACKAGES: tuple[str, ...] = (
+    "furo",
+    "nbsphinx",
+    "myst-parser",
+    "sphinx-simplepdf",
+    "sphinx-copybutton",
+    "sphinxcontrib-confluencebuilder",
+)
 
 MDSPHINX_ROOT = Path(__file__).parent
 TEMPLATE_ROOT = MDSPHINX_ROOT / "templates"
