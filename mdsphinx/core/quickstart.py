@@ -8,8 +8,13 @@ from mdsphinx.core.environment import VirtualEnvironment
 
 
 def master_doc(inp_path: Path) -> Generator[str, None, None]:
-    if inp_path.is_file():
-        yield from ("--master", inp_path.with_suffix("").name, "--suffix", inp_path.suffix)
+    if inp_path.is_file() and inp_path.with_suffix("").name == "index":
+        yield from ("--master", "index", "--suffix", inp_path.suffix)
+
+    for suffix in (".md", ".rst"):
+        path = inp_path.joinpath("index").with_suffix(suffix)
+        if path.exists():
+            yield from ("--master", "index", "--suffix", path.suffix)
 
 
 def get_html_theme(venv: VirtualEnvironment) -> str | None:
@@ -24,8 +29,12 @@ def get_extra_extensions(venv: VirtualEnvironment) -> Generator[str, None, None]
         yield "myst_parser"
 
 
+LATEX_MAIN_TEMPLATE: str = "latex.tex.jinja"
+SPHINX_CFG_TEMPLATE: str = "conf.py.jinja"
+
+
 def get_main_sphinx_config() -> Path | None:
-    if (path := TEMPLATE_ROOT.joinpath("conf.py.jinja")).exists():
+    if (path := TEMPLATE_ROOT.joinpath(SPHINX_CFG_TEMPLATE)).exists():
         return path
     else:
         return None
@@ -40,9 +49,10 @@ def get_base_sphinx_config(venv: VirtualEnvironment) -> Path | None:
 
 def get_custom_templatedir(inp_path: Path) -> Path | None:
     for root in (inp_path.parent, Path.cwd(), TEMPLATE_ROOT):
-        path = root.joinpath("conf.py.jinja")
-        if path.exists():
-            return path.parent
+        for base in (SPHINX_CFG_TEMPLATE, LATEX_MAIN_TEMPLATE):
+            path = root.joinpath(base)
+            if path.exists():
+                return path.parent
     return None
 
 
