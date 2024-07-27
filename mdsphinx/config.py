@@ -6,6 +6,8 @@ from tempfile import gettempdir
 
 NOW = datetime.now(UTC)
 TMP_ROOT = Path(gettempdir())
+MDSPHINX_ROOT = Path(__file__).parent
+TEMPLATE_ROOT = MDSPHINX_ROOT / "templates"
 
 CONFIG_ROOT: Path = Path(os.environ.get("MDSPHINX_CONFIG_ROOT", default=Path.home() / ".config" / "mdsphinx"))
 if CONFIG_ROOT.exists():
@@ -24,10 +26,8 @@ DEFAULT_ENVIRONMENT_PACKAGES: tuple[str, ...] = (
     "furo",
     "nbsphinx",
     "myst-parser",
-    "sphinx-simplepdf",
     "sphinx-copybutton",
     "sphinxcontrib-confluencebuilder",
 )
 
-MDSPHINX_ROOT = Path(__file__).parent
-TEMPLATE_ROOT = MDSPHINX_ROOT / "templates"
+LATEX_COMMAND: tuple[str, ...] = tuple(os.environ.get("MDSPHINX_LATEX_COMMAND", "technic {tex}").split(";"))

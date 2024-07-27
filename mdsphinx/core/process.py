@@ -6,6 +6,7 @@ from typing import Annotated
 from typer import Option
 
 from mdsphinx.config import DEFAULT_ENVIRONMENT
+from mdsphinx.config import LATEX_COMMAND
 from mdsphinx.config import TMP_ROOT
 from mdsphinx.core.environment import VirtualEnvironment
 from mdsphinx.core.prepare import prepare
@@ -76,7 +77,8 @@ def process(
     # fmt: on
 
     if format_key == Format.pdf and builder == "latex":
-        run("tectonic", get_input_tex(out_root, format_key))
+        for command in LATEX_COMMAND:
+            run(command.format(tex=get_input_tex(out_root, format_key)))
 
     if show_output:
         match format_key:
