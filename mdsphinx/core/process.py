@@ -1,4 +1,6 @@
+import dataclasses
 import webbrowser
+from collections.abc import Callable
 from enum import Enum
 from pathlib import Path
 from typing import Annotated
@@ -21,14 +23,66 @@ class Format(Enum):
     confluence = "confluence"
 
 
-LOOKUP_BUILDER: dict[Format, dict[str, str]] = {
-    Format.pdf: {"latex": "latex", "default": "latex"},
-    Format.html: {
-        "html": "html",
-        "default": "html",
-        "single-page": "singlehtml",
+@dataclasses.dataclass
+class Builder:
+    name: str
+    output: Callable[[Path], Path] | None = None
+    export: bool = False
+
+
+def get_output(out_root: Path, *args: str, pattern: str) -> Path:
+    for path in out_root.joinpath(*args).glob(pattern):
+        return path
+    raise FileNotFoundError(pattern)
+
+
+LOOKUP_BUILDER: dict[Format, dict[str, Builder]] = {
+    Format.pdf: {
+        "latex": Builder(
+            name="latex",
+            output=lambda out_root: get_output(out_root, "build", "pdf", pattern="index.pdf"),
+            export=True,
+        ),
+        "default": Builder(
+            name="latex",
+            output=lambda out_root: get_output(out_root, "build", "pdf", pattern="index.pdf"),
+            export=True,
+        ),
     },
-    Format.confluence: {"default": "confluence", "confluence": "confluence", "single-page": "singleconfluence"},
+    Format.html: {
+        "html": Builder(
+            name="html",
+            output=lambda out_root: get_output(out_root, "build", "html", pattern="index.html"),
+            export=False,
+        ),
+        "default": Builder(
+            name="html",
+            output=lambda out_root: get_output(out_root, "build", "html", pattern="index.html"),
+            export=False,
+        ),
+        "single-page": Builder(
+            name="singlehtml",
+            output=lambda out_root: get_output(out_root, "build", "html", pattern="index.html"),
+            export=True,
+        ),
+    },
+    Format.confluence: {
+        "default": Builder(
+            name="confluence",
+            output=None,
+            export=False,
+        ),
+        "confluence": Builder(
+            name="confluence",
+            output=None,
+            export=False,
+        ),
+        "single-page": Builder(
+            name="singleconfluence",
+            output=None,
+            export=False,
+        ),
+    },
 }
 
 
@@ -58,7 +112,7 @@ def process(
         raise FileNotFoundError(inp)
 
     try:
-        builder = LOOKUP_BUILDER[format_key][builder_key]
+        builder: Builder = LOOKUP_BUILDER[format_key][builder_key]
     except KeyError:
         raise KeyError(f"--using {builder_key} must be one of {', '.join(LOOKUP_BUILDER[format_key].keys())}")
 
@@ -70,25 +124,22 @@ def process(
     venv.run(
         "sphinx-build",
         "-b",
-        builder,
+        builder.name,
         out_root.joinpath("source"),
         out_root.joinpath("build", format_key.value),
     )
     # fmt: on
 
-    if format_key == Format.pdf and builder == "latex":
+    if format_key == Format.pdf and builder.name == "latex":
         for command in LATEX_COMMAND:
-            kwargs = dict(tex=get_input_tex(out_root, format_key))
+            kwargs = dict(tex=get_output(out_root, "build", "pdf", pattern="index.tex"))
             run(*(part.format(**kwargs) for part in command))
 
     if show_output:
-        match format_key:
-            case Format.pdf:
-                open_url(get_output_pdf(out_root, format_key))
-            case Format.html:
-                open_url(get_output_html(out_root, format_key))
-            case _:
-                raise NotImplementedError(f"Cant open {format_key.value} output.")
+        if builder.output is not None:
+            open_url(builder.output(out_root))
+        else:
+            raise NotImplementedError(f"Cant open {format_key.value} output.")
 
 
 def open_url(url: Path) -> None:
@@ -98,21 +149,3 @@ def open_url(url: Path) -> None:
         webbrowser.open(url.as_uri(), new=2)
     else:
         raise FileNotFoundError(url)
-
-
-def get_input_tex(out_root: Path, format_key: Format) -> Path:
-    for path in out_root.joinpath("build", format_key.value).glob("index.tex"):
-        return path
-    raise FileNotFoundError("*.tex")
-
-
-def get_output_pdf(out_root: Path, format_key: Format) -> Path:
-    for path in out_root.joinpath("build", format_key.value).glob("index.pdf"):
-        return path
-    raise FileNotFoundError("*.pdf")
-
-
-def get_output_html(out_root: Path, format_key: Format) -> Path:
-    for path in out_root.joinpath("build", format_key.value).glob("index.html"):
-        return path
-    raise FileNotFoundError("*.html")
