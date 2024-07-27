@@ -39,7 +39,7 @@ def process(
     env_name: Annotated[str, Option(help="The environment name.")] = DEFAULT_ENVIRONMENT,
     tmp_root: Annotated[Path, Option(help="The directory for temporary output.")] = TMP_ROOT,
     overwrite: Annotated[bool, Option(help="Force creation of new output folder in --tmp-root?")] = False,
-    regenerate: Annotated[bool, Option(help="Remove existing sphinx conf.py file?")] = False,
+    reconfigure: Annotated[bool, Option(help="Remove existing sphinx conf.py file?")] = False,
     show_output: Annotated[bool, Option(help="Open the generated output file?")] = False,
 ) -> None:
     """
@@ -62,7 +62,7 @@ def process(
     except KeyError:
         raise KeyError(f"--using {builder_key} must be one of {', '.join(LOOKUP_BUILDER[format_key].keys())}")
 
-    prepare(inp=inp, env_name=env_name, tmp_root=tmp_root, overwrite=overwrite, regenerate=regenerate)
+    prepare(inp=inp, env_name=env_name, tmp_root=tmp_root, overwrite=overwrite, reconfigure=reconfigure)
 
     venv = VirtualEnvironment.from_db(env_name)
 

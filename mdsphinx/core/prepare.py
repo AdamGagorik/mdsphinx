@@ -30,7 +30,7 @@ def prepare(
     env_name: Annotated[str, Option(help="The environment name.")] = DEFAULT_ENVIRONMENT,
     tmp_root: Annotated[Path, Option(help="The directory for temporary output.")] = TMP_ROOT,
     overwrite: Annotated[bool, Option(help="Force creation of new output folder in --tmp-root?")] = False,
-    regenerate: Annotated[bool, Option(help="Remove existing sphinx conf.py file?")] = False,
+    reconfigure: Annotated[bool, Option(help="Remove existing sphinx conf.py file?")] = False,
 ) -> None:
     """
     Preprocess the input files.
@@ -43,7 +43,7 @@ def prepare(
         raise FileNotFoundError(inp)
 
     venv = VirtualEnvironment.from_db(env_name)
-    sphinx_quickstart(inp, out_root, venv, remove=regenerate)
+    sphinx_quickstart(inp, out_root, venv, remove=reconfigure)
 
     if context is None:
         for root in (inp.parent, Path.cwd()):
