@@ -3,9 +3,35 @@
 {%- if html_theme %}
 html_theme = {{ html_theme | repr }}
 {%- endif %}
+html_theme_options = {
+    "hide_toc": True,
+    "sidebar_hide_name": True,
+}
 
 {% if 'myst_parser' in extensions %}
 myst_enable_extensions = [
   "colon_fence",
 ]
 {% endif %}
+
+latex_engine = 'xelatex'
+
+latex_preamble = r"""
+\pagenumbering{gobble}
+\setcounter{secnumdepth}{-1}
+"""
+
+latex_elements = {
+    "papersize": "a4paper",
+    "pointsize": "8pt",
+    "maketitle": "",
+    "makeindex": "",
+    "printindex": "",
+    "tableofcontents": "",
+    "preamble": latex_preamble,
+    'sphinxsetup': 'hmargin={2cm, 2cm}, vmargin={2cm, 2cm}',
+}
+
+latex_documents = [
+    ('index', 'index.tex', 'mdsphinx', 'mdsphinx', 'howto'),
+]
