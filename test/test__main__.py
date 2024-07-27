@@ -1,7 +1,7 @@
 import pytest
 from typer.testing import CliRunner
 
-from mdsphinx.core.__main__ import app
+from mdsphinx.__main__ import app
 
 
 @pytest.mark.parametrize(
