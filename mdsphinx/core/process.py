@@ -78,7 +78,8 @@ def process(
 
     if format_key == Format.pdf and builder == "latex":
         for command in LATEX_COMMAND:
-            run(command.format(tex=get_input_tex(out_root, format_key)))
+            kwargs = dict(tex=get_input_tex(out_root, format_key))
+            run(*(part.format(**kwargs) for part in command))
 
     if show_output:
         match format_key:

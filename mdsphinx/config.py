@@ -1,4 +1,5 @@
 import os
+import shlex
 from datetime import datetime
 from datetime import UTC
 from pathlib import Path
@@ -30,4 +31,6 @@ DEFAULT_ENVIRONMENT_PACKAGES: tuple[str, ...] = (
     "sphinxcontrib-confluencebuilder",
 )
 
-LATEX_COMMAND: tuple[str, ...] = tuple(os.environ.get("MDSPHINX_LATEX_COMMAND", "technic {tex}").split(";"))
+LATEX_COMMAND: tuple[tuple[str, ...], ...] = tuple(
+    tuple(shlex.split(command)) for command in os.environ.get("MDSPHINX_LATEX_COMMAND", "tectonic '{tex}'").split(";")
+)
