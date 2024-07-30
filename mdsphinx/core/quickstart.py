@@ -27,6 +27,8 @@ def get_html_theme(venv: VirtualEnvironment) -> str | None:
 def get_extra_extensions(venv: VirtualEnvironment) -> Generator[str, None, None]:
     if venv.has_package("myst_parser"):
         yield "myst_parser"
+    if venv.has_package("sphinxcontrib-confluencebuilder"):
+        yield "sphinxcontrib.confluencebuilder"
 
 
 LATEX_MAIN_TEMPLATE: str = "latex.tex.jinja"
@@ -84,6 +86,7 @@ def sphinx_quickstart(
             *(() if not base_sphinx_config else ("-d", f"base_sphinx_config={base_sphinx_config}")),
             *(() if not main_sphinx_config else ("-d", f"main_sphinx_config={main_sphinx_config}")),
             *(() if not html_theme else ("-d", f"html_theme={html_theme}")),
+            *("-d", f"inp_path_name={inp_path.with_suffix('').name}"),
             "--sep",
             "-q",
             *master_doc(inp_path),

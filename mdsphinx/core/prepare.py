@@ -129,7 +129,7 @@ class Renderer:
         with self.index.open("w") as stream:
             stream.write(".. only:: latex or builder_html\n\n")
             stream.write("   Index\n")
-            stream.write("   =====\n")
+            stream.write("   =====\n\n")
             stream.write(".. toctree::\n\n")
             for path in sorted(self.out_root.joinpath("source").glob("*.md")):
                 if path.with_suffix("").name != "index":

@@ -60,7 +60,7 @@ LOOKUP_BUILDER: dict[Format, dict[str, Builder]] = {
             output=lambda out_root: get_output(out_root, "build", "html", pattern="index.html"),
             export=False,
         ),
-        "single-page": Builder(
+        "single.page": Builder(
             name="singlehtml",
             output=lambda out_root: get_output(out_root, "build", "html", pattern="index.html"),
             export=True,
@@ -77,7 +77,7 @@ LOOKUP_BUILDER: dict[Format, dict[str, Builder]] = {
             output=None,
             export=False,
         ),
-        "single-page": Builder(
+        "single.page": Builder(
             name="singleconfluence",
             output=None,
             export=False,

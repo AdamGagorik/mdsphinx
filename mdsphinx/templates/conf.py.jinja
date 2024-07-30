@@ -1,6 +1,7 @@
 {% include base_sphinx_config %}
 
-{%- if html_theme %}
+{%- if html_theme %}import os
+
 html_theme = {{ html_theme | repr }}
 {%- endif %}
 html_theme_options = {
@@ -8,13 +9,13 @@ html_theme_options = {
     "sidebar_hide_name": True,
 }
 
-{% if 'myst_parser' in extensions %}
+{% if "myst_parser" in extensions %}
 myst_enable_extensions = [
   "colon_fence",
 ]
 {% endif %}
 
-latex_engine = 'xelatex'
+latex_engine = "xelatex"
 
 latex_preamble = r"""
 \pagenumbering{gobble}
@@ -29,9 +30,38 @@ latex_elements = {
     "printindex": "",
     "tableofcontents": "",
     "preamble": latex_preamble,
-    'sphinxsetup': 'hmargin={2cm, 2cm}, vmargin={2cm, 2cm}',
+    "sphinxsetup": "hmargin={2cm, 2cm}, vmargin={2cm, 2cm}",
 }
 
 latex_documents = [
-    ('index', 'index.tex', 'mdsphinx', 'mdsphinx', 'howto'),
+    ("index", "index.tex", "mdsphinx", "mdsphinx", "howto"),
 ]
+
+confluence_publish = True
+confluence_publish_dryrun = bool(os.environ.get("CONFLUENCE_PUBLISH_DRYRUN", "0") in {"1", "true", "True"})
+
+confluence_server_url = os.environ.get("CONFLUENCE_SERVER_URL", "https://confluence.example.com").rstrip("/")
+
+# noinspection PyBroadException
+try:
+    import netrc
+
+    nc = netrc.netrc()
+    confluence_server_user, _, confluence_api_token = nc.authenticators(confluence_server_url)
+except Exception:
+    confluence_server_user, confluence_api_token = "", ""
+
+confluence_server_url = confluence_server_url.rstrip("/") + "/"
+confluence_api_token = os.environ.get("CONFLUENCE_API_TOKEN", confluence_api_token)
+confluence_server_user = os.environ.get("CONFLUENCE_SERVER_USER", confluence_server_user)
+
+confluence_space_key = os.environ.get("CONFLUENCE_SPACE_KEY", "TEST")
+confluence_parent_page = os.environ.get("CONFLUENCE_PARENT_PAGE", "Test")
+
+confluence_use_index = False
+confluence_publish_postfix = " ({hash:.5})"
+
+confluence_remove_title = False
+confluence_title_overrides = {
+    "index": "{{ inp_path_name }}",
+}
