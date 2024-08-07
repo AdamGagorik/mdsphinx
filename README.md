@@ -10,13 +10,63 @@ pipx install mdsphinx
 
 ## Usage
 
+1. Create a markdown file or directory with markdown files.
+2. Run `mdsphinx env create` to create the default environment.
+3. Optionally, create a `conf.py.jinja` file to customize the Sphinx configuration.
+4. Optionally, create a `context.yml` file with variables to be injected via Jinja2.
+5. Run `mdsphinx process <inp> --to <out> --using <preset>` to convert the markdown to the desired output format.
+
 ```bash
-cd ./example
 mdsphinx env create
+mdsphinx process input.md --to pdf --using latex
+```
+
+You can also process a directory of markdown files.
+
+```bash
+mdsphinx process ./inputs --to pdf --using latex
+```
+
+## Output Formats
+
+There are a few different formats you can convert to:
+
+```bash
 mdsphinx process input.md --to pdf        --using latex
 mdsphinx process input.md --to html       --using default
 mdsphinx process input.md --to confluence --using single.page
-mdsphinx process ./inputs --to html       --using single.page --tmp-root . --reconfigure --show-output --env-name default
+```
+
+## Environments
+
+The default environment installs the following packages:
+
+- `sphinx`
+- `nbsphinx`
+- `myst-parser`
+- `sphinxcontrib-confluencebuilder`
+
+However, you can register any virtual environment you want to use as long as it contains `sphinx`.
+
+```bash
+mdsphinx env add --name my_custom_env --path /path/to/my_custom_env
+mdsphinx process input.md --to pdf --using latex --env-name my_custom_env
+```
+
+## Jinja2 Templating
+
+You can inject values into your markdown files using Jinja2 templating.
+Simply create a file named `context.yml` parallel to the input file or directory.
+
+```yaml
+a: 1
+b: 2
+```
+
+You can then reference these variables in your markdown files.
+
+```markdown
+{{ a }} + {{ b }} = {{ a + b }}
 ```
 
 ## Sphinx Configuration
