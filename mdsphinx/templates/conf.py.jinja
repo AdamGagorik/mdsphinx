@@ -1,6 +1,8 @@
 {% include base_sphinx_config %}
 
-{%- if html_theme %}import os
+import os
+
+{%- if html_theme %}
 
 html_theme = {{ html_theme | repr }}
 {%- endif %}
@@ -38,9 +40,9 @@ latex_documents = [
 ]
 
 confluence_publish = True
-confluence_publish_dryrun = bool(os.environ.get("CONFLUENCE_PUBLISH_DRYRUN", "0") in {"1", "true", "True"})
+confluence_publish_dryrun = bool(os.environ.get("CONFLUENCE_PUBLISH_DRYRUN", "1") in {"1", "true", "True"})
 
-confluence_server_url = os.environ.get("CONFLUENCE_SERVER_URL", "https://confluence.example.com").rstrip("/")
+confluence_server_url = os.environ.get("CONFLUENCE_SERVER_URL", "https://example.atlassian.net/wiki").rstrip("/")
 
 # noinspection PyBroadException
 try:
@@ -55,8 +57,8 @@ confluence_server_url = confluence_server_url.rstrip("/") + "/"
 confluence_api_token = os.environ.get("CONFLUENCE_API_TOKEN", confluence_api_token)
 confluence_server_user = os.environ.get("CONFLUENCE_SERVER_USER", confluence_server_user)
 
-confluence_space_key = os.environ.get("CONFLUENCE_SPACE_KEY", "TEST")
-confluence_parent_page = os.environ.get("CONFLUENCE_PARENT_PAGE", "Test")
+confluence_space_key = os.environ.get("CONFLUENCE_SPACE_KEY", "~MySpace")
+confluence_parent_page = os.environ.get("CONFLUENCE_PARENT_PAGE", "ParentPage")
 
 confluence_use_index = False
 confluence_publish_postfix = " ({hash:.5})"
