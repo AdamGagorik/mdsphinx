@@ -12,6 +12,7 @@ description = "Convert markdown to any output that Sphinx supports"
 authors = ["Adam Gagorik <adam.gagorik@gmail.com>"]
 readme = "README.md"
 license = "WTFPL"
+repository = "https://github.com/AdamGagorik/mdsphinx"
 
 [tool.poetry.dependencies]
 python = "^3.12"
