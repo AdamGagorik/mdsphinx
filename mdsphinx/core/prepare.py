@@ -22,6 +22,9 @@ from mdsphinx.tempdir import get_out_root
 from mdsphinx.types import OptionalPath
 
 
+EPILOG = ""
+
+
 def prepare(
     inp: Annotated[Path, "The input path or directory with markdown files."],
     context: Annotated[OptionalPath, Option(help="JSON/YAML variables to inject when rendering")] = None,

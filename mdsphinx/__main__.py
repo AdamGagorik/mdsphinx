@@ -7,7 +7,7 @@ import mdsphinx.core.prepare
 import mdsphinx.core.process
 
 
-app = Typer(add_completion=False)
+app = Typer(add_completion=False, rich_markup_mode="rich")
 
 
 @app.callback()
@@ -19,8 +19,8 @@ def cb(verbose: bool = False) -> None:
 
 
 app.add_typer(mdsphinx.core.environment.app, name="env")
-app.command()(mdsphinx.core.prepare.prepare)
-app.command()(mdsphinx.core.process.process)
+app.command(epilog=mdsphinx.core.prepare.EPILOG.replace("\n", "\n\n"))(mdsphinx.core.prepare.prepare)
+app.command(epilog=mdsphinx.core.process.EPILOG.replace("\n", "\n\n"))(mdsphinx.core.process.process)
 
 
 if __name__ == "__main__":

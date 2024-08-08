@@ -1,4 +1,5 @@
 import dataclasses
+import shutil
 import webbrowser
 from collections.abc import Callable
 from enum import Enum
@@ -15,6 +16,7 @@ from mdsphinx.core.prepare import prepare
 from mdsphinx.logger import logger
 from mdsphinx.logger import run
 from mdsphinx.tempdir import get_out_root
+from mdsphinx.types import OptionalPath
 
 
 class Format(Enum):
@@ -63,7 +65,7 @@ LOOKUP_BUILDER: dict[Format, dict[str, Builder]] = {
         "single.page": Builder(
             name="singlehtml",
             output=lambda out_root: get_output(out_root, "build", "html", pattern="index.html"),
-            export=True,
+            export=False,
         ),
     },
     Format.confluence: {
@@ -86,10 +88,20 @@ LOOKUP_BUILDER: dict[Format, dict[str, Builder]] = {
 }
 
 
+EPILOG = """
+Examples
+
+mdsphinx process example.md  --to pdf  --using latex --as example.pdf
+mdsphinx process example.rst --to html --using default --as example.html
+mdsphinx process ./directory --to html --using single-page --as example.html
+"""
+
+
 def process(
     inp: Annotated[Path, "The input path or directory with markdown files."],
     format_key: Annotated[Format, Option("--to", help="The desired format.")] = Format.pdf,
     builder_key: Annotated[str, Option("--using", help="The desired builder.")] = "default",
+    out: Annotated[OptionalPath, Option("--as", help="The desired builder.")] = None,
     env_name: Annotated[str, Option(help="The environment name.")] = DEFAULT_ENVIRONMENT,
     tmp_root: Annotated[Path, Option(help="The directory for temporary output.")] = TMP_ROOT,
     overwrite: Annotated[bool, Option(help="Force creation of new output folder in --tmp-root?")] = False,
@@ -97,12 +109,7 @@ def process(
     show_output: Annotated[bool, Option(help="Open the generated output file?")] = False,
 ) -> None:
     """
-    Render markdown to the desired format.
-
-    Example:
-        mdsphinx process example.md  --to pdf  --using latex --show-output
-        mdsphinx process example.rst --to html --using default --show-output
-        mdsphinx process ./directory --to html --using single-page --show-output
+    # Render markdown to the desired format.
     """
     inp = inp.resolve()
     tmp_root = tmp_root.resolve()
@@ -135,17 +142,36 @@ def process(
             kwargs = dict(tex=get_output(out_root, "build", "pdf", pattern="index.tex"))
             run(*(part.format(**kwargs) for part in command))
 
+    if out is not None:
+        if builder.export and builder.output is not None:
+            save_url(url=builder.output(out_root), out=out, top=tmp_root)
+        else:
+            logger.error(dict(action="save", message=f"Exporting {format_key.value} is not yet supported."))
+
     if show_output:
         if builder.output is not None:
-            open_url(builder.output(out_root))
+            open_url(url=builder.output(out_root), top=tmp_root)
         else:
             raise NotImplementedError(f"Cant open {format_key.value} output.")
 
 
-def open_url(url: Path) -> None:
-    logger.info(dict(action="open", url=url))
+def open_url(url: Path, top: Path = TMP_ROOT) -> None:
     if url.exists():
-        logger.info(dict(action="open", url=url))
+        logger.info(dict(action="open", url=url if not url.is_relative_to(top) else url.relative_to(top)))
         webbrowser.open(url.as_uri(), new=2)
+    else:
+        raise FileNotFoundError(url)
+
+
+def save_url(url: Path, out: Path, top: Path = TMP_ROOT) -> None:
+    out = out.resolve()
+    url = url if not url.is_relative_to(top) else url.relative_to(top)
+    out = out if not out.is_relative_to(top) else out.relative_to(top)
+    logger.info(dict(action="save", url=url, out=out))
+    if url.exists():
+        if out.is_dir():
+            out = out.joinpath(url.name)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(url, out)
     else:
         raise FileNotFoundError(url)
