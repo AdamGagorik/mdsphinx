@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Annotated
 from typing import Any
 from typing import ClassVar
-from typing import Optional
 
 from jinja2 import Environment
 from jinja2 import StrictUndefined
@@ -20,8 +19,7 @@ from mdsphinx.core.environment import VirtualEnvironment
 from mdsphinx.core.quickstart import sphinx_quickstart
 from mdsphinx.logger import logger
 from mdsphinx.tempdir import get_out_root
-
-OptionalPath = Optional[Path]
+from mdsphinx.types import OptionalPath
 
 
 def prepare(
