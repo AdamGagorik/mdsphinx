@@ -11,8 +11,8 @@ from subprocess import CompletedProcess
 from subprocess import DEVNULL
 from typing import Annotated
 from typing import Any
-from typing import Optional
 
+import typer
 from typer import confirm
 from typer import Option
 from typer import Typer
@@ -23,9 +23,7 @@ from mdsphinx.config import ENVIRONMENTS
 from mdsphinx.config import ENVIRONMENTS_REGISTRY
 from mdsphinx.logger import logger
 from mdsphinx.logger import run
-
-
-MultipleStrings = Optional[list[str]]
+from mdsphinx.types import MultipleStrings
 
 
 app = Typer(help="Manage environments.")
@@ -39,7 +37,7 @@ class VirtualEnvironment:
     @classmethod
     def from_db(cls, name: str) -> VirtualEnvironment:
         with environments() as db:
-            venv = cls(name, db[name])
+            venv = cls(name, safe_get_env(db, name))
             logger.info(f"venv.name: {venv.name}")
             logger.info(f"venv.path: {venv.path}")
             return venv
@@ -95,6 +93,16 @@ class VirtualEnvironment:
 def environments() -> Generator[shelve.Shelf[Path], None, None]:
     with shelve.open(str(ENVIRONMENTS_REGISTRY), writeback=True) as shelf:
         yield shelf
+
+
+def safe_get_env(db: shelve.Shelf[Path], name: str) -> Path:
+    try:
+        return db[name]
+    except KeyError:
+        logger.error(dict(action="get", name=name, message="environment not found"))
+        logger.error(dict(action="get", name=name, message="use 'mdsphinx env add' to add an existing environment"))
+        logger.error(dict(action="get", name=name, message="use 'mdsphinx env create' to create a new environment"))
+        raise typer.Exit(1)
 
 
 @app.command(name="add")
