@@ -2,6 +2,13 @@
 
 Convert markdown to any output format that Sphinx supports.
 
+In contrast to something like pandoc, this tool is useful if you want to...
+
+1) Use Jinja2 templating
+2) Use MyST Markdown syntax
+3) Use other Sphinx extensions.
+4) Push Markdown to a Confluence page.
+
 ## Installation
 
 ```bash
