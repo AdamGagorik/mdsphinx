@@ -14,6 +14,8 @@ git tag -d "v${VERSION}"
 git add pyproject.toml
 git add ./mdsphinx/__init__.py
 git commit -m "Update version to ${VERSION}"
+git tag "v${VERSION}"
+git push --tags
 
 # Create the release
 gh release create
