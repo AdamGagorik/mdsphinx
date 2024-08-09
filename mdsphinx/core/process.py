@@ -94,7 +94,9 @@ Examples
 mdsphinx process example.md  --to pdf  --using latex --as example.pdf
 mdsphinx process example.rst --to html --using default --as example.html
 mdsphinx process ./directory --to html --using single-page --as example.html
-"""
+""".replace(
+    "\n", "\n\n"
+)
 
 
 def process(
@@ -109,7 +111,7 @@ def process(
     show_output: Annotated[bool, Option(help="Open the generated output file?")] = False,
 ) -> None:
     """
-    # Render markdown to the desired format.
+    Render markdown to the desired format.
     """
     inp = inp.resolve()
     tmp_root = tmp_root.resolve()

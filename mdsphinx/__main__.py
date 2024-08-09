@@ -4,6 +4,7 @@ from typer import Exit
 from typer import Typer
 
 import mdsphinx.core.environment
+import mdsphinx.core.generate
 import mdsphinx.core.prepare
 import mdsphinx.core.process
 
@@ -12,8 +13,9 @@ app = Typer(add_completion=False, rich_markup_mode="rich", invoke_without_comman
 
 
 app.add_typer(mdsphinx.core.environment.app, name="env")
-app.command(epilog=mdsphinx.core.prepare.EPILOG.replace("\n", "\n\n"))(mdsphinx.core.prepare.prepare)
-app.command(epilog=mdsphinx.core.process.EPILOG.replace("\n", "\n\n"))(mdsphinx.core.process.process)
+app.command(epilog=mdsphinx.core.prepare.EPILOG)(mdsphinx.core.prepare.prepare)
+app.command(epilog=mdsphinx.core.process.EPILOG)(mdsphinx.core.process.process)
+app.command(epilog=mdsphinx.core.generate.EPILOG)(mdsphinx.core.generate.generate)
 
 
 @app.callback()
