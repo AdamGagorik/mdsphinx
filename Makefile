@@ -35,7 +35,4 @@ clean:
 
 .PHONY : release
 release:
-	gh release create
-	git pull
-	poetry build
-	poetry publish
+	./release.sh
