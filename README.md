@@ -135,3 +135,7 @@ However, you can set `MDSPHINX_LATEX_COMMAND` to be a `;` delimited list of comm
 ```bash
 export MDSPHINX_LATEX_COMMAND="xelatex {tex}"
 ```
+
+## Pandoc Configuration
+
+The `pandoc` tool is required to export generated `html` to a single file.
