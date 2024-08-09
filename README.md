@@ -21,7 +21,9 @@ pipx install mdsphinx
 2. Run `mdsphinx env create` to create the default environment.
 3. Optionally, create a `conf.py.jinja` file to customize the Sphinx `conf.py`.
 4. Optionally, create a `context.yml` file with variables to be injected via Jinja2.
-5. Run `mdsphinx process <inp> --to <fmt> --using <preset> --as <out>` to convert the markdown to the desired output format.
+5. Run `mdsphinx process <inp> --to <fmt> --using <preset> --as <out>` to convert the markdown.
+
+### TLDR
 
 ```bash
 mdsphinx env create
