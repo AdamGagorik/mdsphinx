@@ -129,6 +129,7 @@ mdsphinx process input.md --to confluence --using single.page
 ## LaTeX Configuration
 
 The default LaTeX configuration is set up to use `tectonic` as the LaTeX engine.
+
 However, you can set `MDSPHINX_LATEX_COMMAND` to be a `;` delimited list of commands to run instead.
 
 ```bash
