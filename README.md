@@ -1,4 +1,4 @@
-# mdsphinx
+# [mdsphinx](https://pypi.org/project/mdsphinx)
 
 Convert markdown to any output format that Sphinx supports.
 
