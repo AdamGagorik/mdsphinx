@@ -4,8 +4,8 @@ Convert markdown to any output format that Sphinx supports.
 
 In contrast to something like pandoc, this tool is useful if you want to...
 
-1) Use Jinja2 templating
-2) Use MyST Markdown syntax
+1) Use Jinja2 templating.
+2) Use MyST Markdown syntax.
 3) Use other Sphinx extensions.
 4) Push Markdown to a Confluence page.
 
@@ -19,9 +19,9 @@ pipx install mdsphinx
 
 1. Create a markdown file or directory with markdown files.
 2. Run `mdsphinx env create` to create the default environment.
-3. Optionally, create a `conf.py.jinja` file to customize the Sphinx configuration.
+3. Optionally, create a `conf.py.jinja` file to customize the Sphinx `conf.py`.
 4. Optionally, create a `context.yml` file with variables to be injected via Jinja2.
-5. Run `mdsphinx process <inp> --to <out> --using <preset> --as <out>` to convert the markdown to the desired output format.
+5. Run `mdsphinx process <inp> --to <fmt> --using <preset> --as <out>` to convert the markdown to the desired output format.
 
 ```bash
 mdsphinx env create
