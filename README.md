@@ -62,6 +62,10 @@ mdsphinx env add --name my_custom_env --path /path/to/my_custom_env
 mdsphinx process input.md --to pdf --using latex --env-name my_custom_env
 ```
 
+Environments and metadata are stored in the `$MDSPHINX_CONFIG_ROOT`, which defaults to `~/.config/mdsphinx`.
+
+> You can safely delete this directory at any time.
+
 ## Jinja2 Templating
 
 Create a file named `context.yml` parallel to the input file or directory.
