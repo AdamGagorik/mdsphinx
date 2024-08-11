@@ -3,6 +3,7 @@ from __future__ import annotations
 import dataclasses
 import functools
 import shutil
+from collections.abc import Generator
 from pathlib import Path
 from typing import Annotated
 from typing import Any
@@ -10,6 +11,7 @@ from typing import ClassVar
 
 from jinja2 import Environment
 from jinja2 import StrictUndefined
+from natsort import os_sorted
 from typer import Option
 
 from mdsphinx.config import DEFAULT_ENVIRONMENT
@@ -127,14 +129,31 @@ class Renderer:
         ):
             return
 
+        logger.info("creating: %s", self.index)
         with self.index.open("w") as stream:
             stream.write(".. only:: latex or builder_html\n\n")
             stream.write("   Index\n")
             stream.write("   =====\n\n")
             stream.write(".. toctree::\n\n")
-            for path in sorted(self.out_root.joinpath("source").glob("*.md")):
-                if path.with_suffix("").name != "index":
-                    stream.write(f"   {path.with_suffix('').name}\n")
+            for path in os_sorted(self._get_index_paths(self.index.parent, recursive=True)):
+                stream.write(f"   {path.relative_to(self.index.parent).with_suffix('')}\n")
+
+    @classmethod
+    def _get_index_paths(cls, top: Path, recursive: bool = False) -> Generator[Path, None, None]:
+        for root, dir_names, file_names in top.walk(top_down=True):
+
+            for base in file_names:
+                if base in {"index.md", "index.rst"}:
+                    continue
+
+                path = root / base
+                if path.suffix in cls.SOURCES:
+                    yield path
+
+            if not recursive:
+                dir_names.clear()
+
+            dir_names[:] = [d for d in dir_names if d not in cls.EXCLUDED_NAMES]
 
     def __post_init__(self) -> None:
         self.context.update(date=NOW.date(), time=NOW.time())
