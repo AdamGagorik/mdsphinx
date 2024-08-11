@@ -13,7 +13,10 @@ html_theme_options = {
 
 {% if "myst_parser" in extensions %}
 myst_enable_extensions = [
-  "colon_fence",
+    "attrs_inline",
+    "attrs_block",
+    "colon_fence",
+    "dollarmath",
 ]
 {% endif %}
 
