@@ -18,7 +18,7 @@ git tag "v${VERSION}"
 git push --tags
 
 # Create the release
-gh release create
+gh release create "v${VERSION}" --generate-notes
 git pull
 
 # Push to PyPI
