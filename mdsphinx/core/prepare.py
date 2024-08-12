@@ -20,6 +20,7 @@ from mdsphinx.config import TMP_ROOT
 from mdsphinx.core.environment import VirtualEnvironment
 from mdsphinx.core.quickstart import sphinx_quickstart
 from mdsphinx.logger import logger
+from mdsphinx.mermaid import jinja_mermaid
 from mdsphinx.tempdir import get_out_root
 from mdsphinx.types import OptionalPath
 
@@ -72,7 +73,9 @@ def prepare(
 
 @functools.lru_cache(maxsize=1)
 def env() -> Environment:
-    return Environment(undefined=StrictUndefined)
+    instance = Environment(undefined=StrictUndefined)
+    instance.globals["mermaid"] = jinja_mermaid
+    return instance
 
 
 @dataclasses.dataclass(frozen=True)
@@ -194,7 +197,7 @@ class Renderer:
 
         if render:
             template = env().from_string(content)
-            rendered = template.render(**self.context)
+            rendered = template.render(**self.context, source=None, out_path=out_path)
         else:
             rendered = content
 
@@ -208,7 +211,7 @@ class Renderer:
 
         with source.open("r") as stream:
             template = env().from_string(stream.read())
-            rendered = template.render(**self.context)
+            rendered = template.render(**self.context, source=source, out_path=out_path)
 
         logger.info(f"rendered: {out_path}")
         out_path.parent.mkdir(parents=True, exist_ok=True)
