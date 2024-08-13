@@ -20,7 +20,7 @@ from mdsphinx.config import TMP_ROOT
 from mdsphinx.core.environment import VirtualEnvironment
 from mdsphinx.core.quickstart import sphinx_quickstart
 from mdsphinx.logger import logger
-from mdsphinx.mermaid import jinja_mermaid
+from mdsphinx.mermaid import MermaidExtension
 from mdsphinx.tempdir import get_out_root
 from mdsphinx.types import OptionalPath
 
@@ -73,8 +73,7 @@ def prepare(
 
 @functools.lru_cache(maxsize=1)
 def env() -> Environment:
-    instance = Environment(undefined=StrictUndefined)
-    instance.globals["mermaid"] = jinja_mermaid
+    instance = Environment(undefined=StrictUndefined, extensions=[MermaidExtension])
     return instance
 
 
