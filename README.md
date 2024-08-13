@@ -143,3 +143,17 @@ export MDSPHINX_LATEX_COMMAND="xelatex {tex}"
 ## Pandoc Configuration
 
 The `pandoc` tool is required to export generated `html` to a single file.
+
+## Mermaid Diagrams
+
+Experimental support for Mermaid diagrams is available as a custom `jinja2` block.
+You must have `docker` installed and ideally by using the `MyST` parser.
+
+```jinja2
+{% mermaid width=75, caption="An example mermaid diagram" -%}
+graph TD
+    A --> B
+    B --> C
+    A --> C
+{% endmermaid %}
+```
