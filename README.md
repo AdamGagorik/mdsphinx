@@ -81,6 +81,26 @@ You can then reference these variables in your markdown files.
 {{ a }} + {{ b }} = {{ a + b }}
 ```
 
+Experimental support for Mermaid diagrams is available as a custom `jinja2` block.
+
+> You must have `docker` installed and ideally by using the `MyST` parser.
+
+```jinja2
+{% mermaid -%}
+theme: default
+scale: 3
+width: 75
+align: center
+caption: |
+    An example mermaid diagram!
+diagram: |
+    graph TD
+        A --> B
+        B --> C
+        A --> C
+{% endmermaid %}
+```
+
 ## Sphinx Configuration
 
 Create a file named `conf.py.jinja` parallel to the input file or directory.

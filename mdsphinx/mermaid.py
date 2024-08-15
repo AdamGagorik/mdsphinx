@@ -10,6 +10,7 @@ from typing import cast
 from uuid import UUID
 from uuid import uuid5
 
+import yaml
 from jinja2 import Environment
 from jinja2 import nodes
 from jinja2 import pass_context
@@ -20,6 +21,7 @@ from jinja2.runtime import Macro
 
 from mdsphinx.logger import logger
 from mdsphinx.logger import run
+
 
 namespace = UUID("b5db653c-cc06-466c-9b39-775db782a06f")
 
@@ -90,55 +92,6 @@ def mermaid(
             raise RuntimeError("Failed to execute mermaid command")
 
 
-@pass_context
-def gen_markdown_lines(
-    context: Context,
-    salt: str,
-    inp: Path | str,
-    ext: str = ".png",
-    use_cached: bool = True,
-    use_myst_syntax: bool = True,
-    align: str = "center",
-    caption: str | None = None,
-    **kwargs: Any,
-) -> Generator[str, None, None]:
-    """
-    Run mermaid and yield a series of markdown commands to include it .
-    """
-    ext = "." + ext.lower().lstrip(".")
-    if isinstance(inp, str) and inp.endswith(".mmd"):
-        inp = Path(inp)
-
-    root = cast(Path, context.parent.get("out_path")).parent
-    key = str(uuid5(namespace, str(inp) + salt))
-    out = root.joinpath(key).with_suffix(ext)
-
-    if not out.exists() or not use_cached:
-        mermaid(inp=inp, out=out, **kwargs)
-    else:
-        logger.warn(dict(action="use-cached", out=out))
-
-    if use_myst_syntax:
-        if caption is not None:
-            yield f":::{{figure}} {out.name}"
-        else:
-            yield f":::{{image}} {out.name}"
-        if kwargs.get("width", None) is not None:
-            yield f":width: {kwargs['width']}px"
-        if kwargs.get("height", None) is not None:
-            yield f":height: {kwargs['height']}px"
-        if align is not None:
-            yield f":align: {align}"
-        if caption is not None:
-            yield f":\n{caption}"
-        yield r":::"
-    else:
-        if caption is not None:
-            yield f"![{caption}]({out.name})"
-        else:
-            yield f"![{out.name}]"
-
-
 class MermaidExtension(Extension):
     tags = {"mermaid"}
 
@@ -146,55 +99,76 @@ class MermaidExtension(Extension):
         super().__init__(environment)
 
     def parse(self, parser: Parser) -> nodes.Node:
-        lineno = next(parser.stream).lineno
-        kwargs = dict(parse_block_kwargs(parser, valid_keys=set(self.valid_keys)))
-
-        body = parser.parse_statements(("name:endmermaid",), drop_needle=True)
-        kwargs["inp"] = cast(nodes.TemplateData, cast(nodes.Output, body[0]).nodes[0]).data
-
-        call = self.call_method("_render_mermaid", [nodes.Const(json.dumps(kwargs))])
-        return nodes.CallBlock(call, [], [], body).set_lineno(lineno)
+        line = next(parser.stream).lineno
+        block = parser.parse_statements(("name:endmermaid",), drop_needle=True)
+        kwargs = yaml.safe_load(cast(nodes.TemplateData, cast(nodes.Output, block[0]).nodes[0]).data)
+        callback = self.call_method("_render_mermaid", [nodes.Const(json.dumps(kwargs))])
+        return nodes.CallBlock(callback, [], [], block).set_lineno(line)
 
     @property
     def valid_keys(self) -> Generator[str]:
-        excluded = {"context", "salt", "inp", "out"}
-        for k in chain(inspect.signature(mermaid).parameters, inspect.signature(gen_markdown_lines).parameters):
+        excluded = {"context", "output_name_salt", "out"}
+        for k in chain(inspect.signature(mermaid).parameters, inspect.signature(self.gen_markdown_lines).parameters):
             if k not in excluded:
                 yield k
 
     @pass_context
     def _render_mermaid(self, context: Context, kwargs_json: str, caller: Macro) -> str:
         kwargs = json.loads(kwargs_json)
-        return "\n".join(gen_markdown_lines(context, salt=kwargs_json, **kwargs))
+        if "diagram" in kwargs:
+            kwargs["inp"] = kwargs.get("inp", kwargs.get("diagram", None))
+            del kwargs["diagram"]
 
+        unknown_keys = set(kwargs.keys()) - set(self.valid_keys)
+        if any(unknown_keys):
+            raise TypeError(f"_render_mermaid() got unexpected keyword arguments {''.join(unknown_keys)}")
 
-def parse_block_kwargs(parser: Parser, valid_keys: set[str]) -> Generator[tuple[str, str], None, None]:
-    """
-    Parse a jinja2 token stream for keyword arguments.
-    """
-    num_kwargs = 0
-    while not parser.stream.current.type == "block_end":
-        if num_kwargs >= len(valid_keys):
-            raise RuntimeError(f"Expected at most {len(valid_keys)} arguments, got {num_kwargs}")
+        return "\n".join(self.gen_markdown_lines(context, output_name_salt=kwargs_json, **kwargs))
 
-        if parser.stream.current.type == "name":
-            key = parser.stream.current.value
-            if key not in valid_keys:
-                raise KeyError(key)
+    @staticmethod
+    def gen_markdown_lines(
+        context: Context,
+        inp: Path | str,
+        ext: str = ".png",
+        align: str = "center",
+        caption: str | None = None,
+        use_cached: bool = True,
+        use_myst_syntax: bool = True,
+        output_name_salt: str = "...",
+        **kwargs: Any,
+    ) -> Generator[str, None, None]:
+        """
+        Run mermaid and yield a series of markdown commands to include it .
+        """
+        ext = "." + ext.lower().lstrip(".")
+        if isinstance(inp, str) and inp.endswith(".mmd"):
+            Path(inp)
 
-            next(parser.stream)
-            parser.stream.expect("assign")
-            expr = parser.parse_expression()
+        root = cast(Path, context.parent.get("out_path")).parent
+        key = str(uuid5(namespace, str(inp) + output_name_salt))
+        out = root.joinpath(key).with_suffix(ext)
 
-            if isinstance(expr, nodes.Const):
-                yield key, expr.value
-                num_kwargs += 1
+        if not out.exists() or not use_cached:
+            mermaid(inp=inp, out=out, **kwargs)
+        else:
+            logger.warn(dict(action="use-cached", out=out))
+
+        if use_myst_syntax:
+            if caption is not None:
+                yield f":::{{figure}} {out.name}"
             else:
-                raise RuntimeError(f"Expected constant, got {expr}")
+                yield f":::{{image}} {out.name}"
+            if kwargs.get("width", None) is not None:
+                yield f":width: {kwargs['width']}px"
+            if kwargs.get("height", None) is not None:
+                yield f":height: {kwargs['height']}px"
+            if align is not None:
+                yield f":align: {align}"
+            if caption is not None:
+                yield f":\n{caption}"
+            yield r":::"
         else:
-            raise RuntimeError(f"Expected name, got {parser.stream.current.type}")
-
-        if parser.stream.current.type == "block_end":
-            break
-        else:
-            parser.stream.expect("comma")
+            if caption is not None:
+                yield f"![{caption}]({out.name})"
+            else:
+                yield f"![{out.name}]"
