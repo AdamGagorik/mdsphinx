@@ -83,7 +83,7 @@ You can then reference these variables in your markdown files.
 
 Experimental support for Mermaid diagrams is available as a custom `jinja2` block.
 
-> You must have `docker` installed and ideally by using the `MyST` parser.
+> You must have `docker` installed and ideally be using the `MyST` parser.
 
 ```jinja2
 {% mermaid -%}

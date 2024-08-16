@@ -1,29 +1,14 @@
 import inspect
-import json
 import shutil
 from collections.abc import Generator
-from itertools import chain
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
-from typing import cast
-from uuid import UUID
-from uuid import uuid5
 
-import yaml
 from jinja2 import Environment
-from jinja2 import nodes
-from jinja2 import pass_context
-from jinja2.ext import Extension
-from jinja2.parser import Parser
-from jinja2.runtime import Context
-from jinja2.runtime import Macro
 
-from mdsphinx.logger import logger
+from mdsphinx.jinjaext import GenImageExtension
 from mdsphinx.logger import run
-
-
-namespace = UUID("b5db653c-cc06-466c-9b39-775db782a06f")
 
 
 def mermaid(
@@ -92,83 +77,32 @@ def mermaid(
             raise RuntimeError("Failed to execute mermaid command")
 
 
-class MermaidExtension(Extension):
+class MermaidExtension(GenImageExtension):
     tags = {"mermaid"}
 
     def __init__(self, environment: Environment):
         super().__init__(environment)
 
-    def parse(self, parser: Parser) -> nodes.Node:
-        line = next(parser.stream).lineno
-        block = parser.parse_statements(("name:endmermaid",), drop_needle=True)
-        kwargs = yaml.safe_load(cast(nodes.TemplateData, cast(nodes.Output, block[0]).nodes[0]).data)
-        callback = self.call_method("_render_mermaid", [nodes.Const(json.dumps(kwargs))])
-        return nodes.CallBlock(callback, [], [], block).set_lineno(line)
-
     @property
-    def valid_keys(self) -> Generator[str]:
-        excluded = {"context", "output_name_salt", "out"}
-        for k in chain(inspect.signature(mermaid).parameters, inspect.signature(self.gen_markdown_lines).parameters):
-            if k not in excluded:
-                yield k
-
-    @pass_context
-    def _render_mermaid(self, context: Context, kwargs_json: str, caller: Macro) -> str:
-        kwargs = json.loads(kwargs_json)
-        if "diagram" in kwargs:
-            kwargs["inp"] = kwargs.get("inp", kwargs.get("diagram", None))
-            del kwargs["diagram"]
-
-        unknown_keys = set(kwargs.keys()) - set(self.valid_keys)
-        if any(unknown_keys):
-            raise TypeError(f"_render_mermaid() got unexpected keyword arguments {''.join(unknown_keys)}")
-
-        return "\n".join(self.gen_markdown_lines(context, output_name_salt=kwargs_json, **kwargs))
+    def _valid_keys(self) -> Generator[str]:
+        yield from inspect.signature(mermaid).parameters
 
     @staticmethod
-    def gen_markdown_lines(
-        context: Context,
+    def modify(**kwargs: Any) -> Generator[tuple[str, Any], None, None]:
+        for key, value in kwargs.items():
+            if key == "diagram":
+                assert "inp" not in kwargs
+                yield "inp", value
+            else:
+                yield key, value
+
+    def callback(
+        self,
         inp: Path | str,
-        ext: str = ".png",
-        align: str = "center",
-        caption: str | None = None,
-        use_cached: bool = True,
-        use_myst_syntax: bool = True,
-        output_name_salt: str = "...",
+        out: Path,
         **kwargs: Any,
-    ) -> Generator[str, None, None]:
-        """
-        Run mermaid and yield a series of markdown commands to include it .
-        """
-        ext = "." + ext.lower().lstrip(".")
+    ) -> None:
         if isinstance(inp, str) and inp.endswith(".mmd"):
-            Path(inp)
+            inp = Path(inp)
 
-        root = cast(Path, context.parent.get("out_path")).parent
-        key = str(uuid5(namespace, str(inp) + output_name_salt))
-        out = root.joinpath(key).with_suffix(ext)
-
-        if not out.exists() or not use_cached:
-            mermaid(inp=inp, out=out, **kwargs)
-        else:
-            logger.warn(dict(action="use-cached", out=out))
-
-        if use_myst_syntax:
-            if caption is not None:
-                yield f":::{{figure}} {out.name}"
-            else:
-                yield f":::{{image}} {out.name}"
-            if kwargs.get("width", None) is not None:
-                yield f":width: {kwargs['width']}px"
-            if kwargs.get("height", None) is not None:
-                yield f":height: {kwargs['height']}px"
-            if align is not None:
-                yield f":align: {align}"
-            if caption is not None:
-                yield f":\n{caption}"
-            yield r":::"
-        else:
-            if caption is not None:
-                yield f"![{caption}]({out.name})"
-            else:
-                yield f"![{out.name}]"
+        return mermaid(inp=inp, out=out, **kwargs)
