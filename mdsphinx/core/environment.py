@@ -90,7 +90,7 @@ class VirtualEnvironment:
 
 
 @contextmanager
-def environments() -> Generator[shelve.Shelf[Path], None, None]:
+def environments() -> Generator[shelve.Shelf[Path]]:
     with shelve.open(str(ENVIRONMENTS_REGISTRY), writeback=True) as shelf:
         yield shelf
 

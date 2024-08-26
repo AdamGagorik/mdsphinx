@@ -11,6 +11,8 @@ from typing import ClassVar
 
 from jinja2 import Environment
 from jinja2 import StrictUndefined
+from jinja2_mermaid_extension import MermaidExtension
+from jinja2_mermaid_extension import TikZExtension
 from natsort import os_sorted
 from typer import Option
 
@@ -20,7 +22,6 @@ from mdsphinx.config import TMP_ROOT
 from mdsphinx.core.environment import VirtualEnvironment
 from mdsphinx.core.quickstart import sphinx_quickstart
 from mdsphinx.logger import logger
-from mdsphinx.mermaid import MermaidExtension
 from mdsphinx.tempdir import get_out_root
 from mdsphinx.types import OptionalPath
 
@@ -73,7 +74,7 @@ def prepare(
 
 @functools.lru_cache(maxsize=1)
 def env() -> Environment:
-    instance = Environment(undefined=StrictUndefined, extensions=[MermaidExtension])
+    instance = Environment(undefined=StrictUndefined, extensions=[MermaidExtension, TikZExtension])
     return instance
 
 
@@ -141,7 +142,7 @@ class Renderer:
                 stream.write(f"   {path.relative_to(self.index.parent).with_suffix('')}\n")
 
     @classmethod
-    def _get_index_paths(cls, top: Path, recursive: bool = False) -> Generator[Path, None, None]:
+    def _get_index_paths(cls, top: Path, recursive: bool = False) -> Generator[Path]:
         for root, dir_names, file_names in top.walk(top_down=True):
 
             for base in file_names:
@@ -193,27 +194,41 @@ class Renderer:
 
     def _render_content(self, stem: Path | str, content: str, render: bool = False) -> None:
         out_path = self.out_root / stem
+        logger.info(f"creating: {out_path}")
+        out_path.parent.mkdir(parents=True, exist_ok=True)
 
         if render:
             template = env().from_string(content)
-            rendered = template.render(**self.context, source=None, out_path=out_path)
+            rendered = template.render(
+                **self.context,
+                source=None,
+                tikz_input_root=None,
+                tikz_output_root=out_path.parent,
+                mermaid_input_root=None,
+                mermaid_output_root=out_path.parent,
+            )
         else:
             rendered = content
 
-        logger.info(f"creating: {out_path}")
-        out_path.parent.mkdir(parents=True, exist_ok=True)
         with out_path.open("w") as stream:
             stream.write(rendered)
 
     def _render_source(self, source: Path) -> None:
         out_path = self.out_root.joinpath("source") / source.relative_to(self.inp_root)
+        logger.info(f"rendered: {out_path}")
+        out_path.parent.mkdir(parents=True, exist_ok=True)
 
         with source.open("r") as stream:
             template = env().from_string(stream.read())
-            rendered = template.render(**self.context, source=source, out_path=out_path)
+            rendered = template.render(
+                **self.context,
+                source=source,
+                tikz_input_root=source.parent,
+                tikz_output_root=out_path.parent,
+                mermaid_input_root=source.parent,
+                mermaid_output_root=out_path.parent,
+            )
 
-        logger.info(f"rendered: {out_path}")
-        out_path.parent.mkdir(parents=True, exist_ok=True)
         with out_path.open("w") as stream:
             stream.write(rendered)
 

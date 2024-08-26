@@ -81,13 +81,14 @@ You can then reference these variables in your markdown files.
 {{ a }} + {{ b }} = {{ a + b }}
 ```
 
-Experimental support for Mermaid diagrams is available as a custom `jinja2` block.
+Support for Mermaid diagrams is available as a custom `jinja2` block.
 
 > You must have `docker` installed and ideally be using the `MyST` parser.
 
 ```jinja2
 {% mermaid -%}
-theme: default
+ext: .png
+mode: myst
 scale: 3
 width: 75
 align: center
@@ -99,6 +100,25 @@ diagram: |
         B --> C
         A --> C
 {% endmermaid %}
+```
+
+Likewise, you can use the `tikz` block to render LaTeX diagrams.
+
+> You must have `tectonic` installed and ideally be using the `MyST` parser.
+
+```jinja2
+{% tikz -%}
+ext: .png
+mode: myst
+diagram: |
+    \documentclass[margin=0pt]{standalone}
+    \usepackage{tikz}
+    \begin{document}
+    \begin{tikzpicture}
+        \draw (0,0) -- (1,1);
+    \end{tikzpicture}
+    \end{document}
+{% endtikz %}
 ```
 
 ## Sphinx Configuration

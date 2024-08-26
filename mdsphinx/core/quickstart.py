@@ -7,7 +7,7 @@ from mdsphinx.config import TEMPLATE_ROOT
 from mdsphinx.core.environment import VirtualEnvironment
 
 
-def master_doc(inp_path: Path) -> Generator[str, None, None]:
+def master_doc(inp_path: Path) -> Generator[str]:
     if inp_path.is_file() and inp_path.with_suffix("").name == "index":
         yield from ("--master", "index", "--suffix", inp_path.suffix)
 
@@ -24,7 +24,7 @@ def get_html_theme(venv: VirtualEnvironment) -> str | None:
         return None
 
 
-def get_extra_extensions(venv: VirtualEnvironment) -> Generator[str, None, None]:
+def get_extra_extensions(venv: VirtualEnvironment) -> Generator[str]:
     if venv.has_package("myst_parser"):
         yield "myst_parser"
     if venv.has_package("sphinxcontrib-confluencebuilder"):

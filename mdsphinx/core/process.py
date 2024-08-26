@@ -6,6 +6,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Annotated
 
+import jinja2_mermaid_extension.base
 from typer import Option
 
 from mdsphinx.config import DEFAULT_ENVIRONMENT
@@ -99,7 +100,7 @@ mdsphinx process ./directory --to html --using single-page --as example.html
 )
 
 
-def process(
+def process(  # noqa: C901
     inp: Annotated[Path, "The input path or directory with markdown files."],
     format_key: Annotated[Format, Option("--to", help="The desired format.")] = Format.pdf,
     builder_key: Annotated[str, Option("--using", help="The desired builder.")] = "default",
@@ -109,6 +110,7 @@ def process(
     overwrite: Annotated[bool, Option(help="Force creation of new output folder in --tmp-root?")] = False,
     reconfigure: Annotated[bool, Option(help="Remove existing sphinx conf.py file?")] = False,
     show_output: Annotated[bool, Option(help="Open the generated output file?")] = False,
+    just_build: Annotated[bool, Option(help="Just build the output without preparing the sources?")] = False,
 ) -> None:
     """
     Render markdown to the desired format.
@@ -125,7 +127,12 @@ def process(
     except KeyError:
         raise KeyError(f"--using {builder_key} must be one of {', '.join(LOOKUP_BUILDER[format_key].keys())}")
 
-    prepare(inp=inp, env_name=env_name, tmp_root=tmp_root, overwrite=overwrite, reconfigure=reconfigure)
+    if not just_build:
+        prepare(inp=inp, env_name=env_name, tmp_root=tmp_root, overwrite=overwrite, reconfigure=reconfigure)
+        jinja2_mermaid_extension.base.runner().wait()
+
+    if not out_root.joinpath("source").exists():
+        raise FileNotFoundError(out_root)
 
     venv = VirtualEnvironment.from_db(env_name)
 
