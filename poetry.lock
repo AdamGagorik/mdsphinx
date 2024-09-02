@@ -55,13 +55,13 @@ i18n = ["Babel (>=2.7)"]
 
 [[package]]
 name = "jinja2-mermaid-extension"
-version = "1.4.0"
+version = "1.5.2"
 description = "A jinja2 block to render a mermaid diagram"
 optional = false
 python-versions = "<4.0,>=3.12"
 files = [
-    {file = "jinja2_mermaid_extension-1.4.0-py3-none-any.whl", hash = "sha256:4a742f7ad8968511fc72437ddc1f071181e8ccaadb6d6f15b05fc55a5fa50467"},
-    {file = "jinja2_mermaid_extension-1.4.0.tar.gz", hash = "sha256:66a46d74204c4b0b54c1f8b041b5dd9941326c5602a8c6039c731c9f370b2812"},
+    {file = "jinja2_mermaid_extension-1.5.2-py3-none-any.whl", hash = "sha256:0225e0686dc4c6cf6317730c908b1b80e0adb6db78a19d4774c7f3922bc96034"},
+    {file = "jinja2_mermaid_extension-1.5.2.tar.gz", hash = "sha256:bd711f5792e2c284795691607dec4924ceef253238e78f29ca498f5236acbfca"},
 ]
 
 [package.dependencies]
