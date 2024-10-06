@@ -1,0 +1,27 @@
+{% include main_sphinx_config %}
+
+latex_fontpkg = r"""
+\usepackage{fontspec}
+\setromanfont{SourceSerifPro}[
+    Extension      = .otf,
+    UprightFont    = *-Regular,
+    BoldFont       = *-Bold,
+    ItalicFont     = *-RegularIt,
+    BoldItalicFont = *-BoldIt]
+
+\setsansfont{NotoSans}[
+    Extension      = .ttf,
+    UprightFont    = *-Regular,
+    BoldFont       = *-Bold,
+    ItalicFont     = *-Italic,
+    BoldItalicFont = *-BoldItalic]
+
+\setmonofont{SourceCodePro}[
+    Extension      = .otf,
+    UprightFont    = *-Regular,
+    BoldFont       = *-Bold,
+    ItalicFont     = *-RegularIt,
+    BoldItalicFont = *-BoldIt]
+"""
+
+latex_elements["fontpkg"] = latex_fontpkg
