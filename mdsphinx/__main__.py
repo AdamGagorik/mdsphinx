@@ -9,7 +9,14 @@ import mdsphinx.core.prepare
 import mdsphinx.core.process
 
 
-app = Typer(add_completion=False, rich_markup_mode="rich", invoke_without_command=True)
+app = Typer(
+    add_completion=False,
+    rich_markup_mode="rich",
+    invoke_without_command=True,
+    pretty_exceptions_short=True,
+    pretty_exceptions_show_locals=False,
+    pretty_exceptions_enable=True,
+)
 
 
 app.add_typer(mdsphinx.core.environment.app, name="env")

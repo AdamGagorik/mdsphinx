@@ -147,8 +147,8 @@ The default Sphinx `conf.py` sets up a confluence connection by reading your `~/
 |-----------------------------|-----------------------|-----------------------------|--------------------------------------|
 | `confluence_publish_dryrun` | `env`                 | `CONFLUENCE_PUBLISH_DRYRUN` | `1`                                  |
 | `confluence_server_url`     | `env`                 | `CONFLUENCE_SERVER_URL`     | `https://example.atlassian.net/wiki` |
-| `confluence_server_user`    | `netrc[url].login`    | `CONFLUENCE_SERVER_USER`    | `example@gmail.com`                  |
-| `confluence_api_token`      | `netrc[url].password` | `CONFLUENCE_API_TOKEN`      | `api-token`                          |
+| `confluence_server_user`    | `netrc[url].login`    |                             | `example@gmail.com`                  |
+| `confluence_api_token`      | `netrc[url].password` |                             | `api-token`                          |
 | `confluence_space_key`      | `env`                 | `CONFLUENCE_SPACE_KEY`      | `~MySpace`                           |
 | `confluence_parent_page`    | `env`                 | `CONFLUENCE_PARENT_PAGE`    | `ParentPage`                         |
 

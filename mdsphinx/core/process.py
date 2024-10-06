@@ -111,6 +111,7 @@ def process(  # noqa: C901
     reconfigure: Annotated[bool, Option(help="Remove existing sphinx conf.py file?")] = False,
     show_output: Annotated[bool, Option(help="Open the generated output file?")] = False,
     just_build: Annotated[bool, Option(help="Just build the output without preparing the sources?")] = False,
+    just_check_connection: Annotated[bool, Option(help="Just check the connection to the publish endpoint and exit?")] = False,
 ) -> None:
     """
     Render markdown to the desired format.
@@ -135,6 +136,11 @@ def process(  # noqa: C901
         raise FileNotFoundError(out_root)
 
     venv = VirtualEnvironment.from_db(env_name)
+
+    if format_key == Format.confluence:
+        venv.run("python", "-m", "sphinxcontrib.confluencebuilder", "connection-test", "--work-dir", out_root.joinpath("source"))
+        if just_check_connection:
+            return
 
     # fmt: off
     venv.run(

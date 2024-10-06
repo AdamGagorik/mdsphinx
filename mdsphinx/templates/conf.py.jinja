@@ -57,8 +57,6 @@ except Exception:
     confluence_server_user, confluence_api_token = "", ""
 
 confluence_server_url = confluence_server_url.rstrip("/") + "/"
-confluence_api_token = os.environ.get("CONFLUENCE_API_TOKEN", confluence_api_token)
-confluence_server_user = os.environ.get("CONFLUENCE_SERVER_USER", confluence_server_user)
 
 confluence_space_key = os.environ.get("CONFLUENCE_SPACE_KEY", "~MySpace")
 confluence_parent_page = os.environ.get("CONFLUENCE_PARENT_PAGE", "ParentPage")
@@ -70,3 +68,16 @@ confluence_remove_title = False
 confluence_title_overrides = {
     "index": "{{ inp_path_name }}",
 }
+
+def setup(app):
+    def on_config_inited(*args, **kwargs):
+        print("")
+        print("confluence_publish:", confluence_publish)
+        print("confluence_publish_dryrun:", confluence_publish_dryrun)
+        print("confluence_server_user:", confluence_server_user if confluence_server_user else "EMPTY")
+        print("confluence_api_token:", "*****" if confluence_api_token else "EMPTY")
+        print("confluence_server_url:", confluence_server_url)
+        print("confluence_space_key:", confluence_space_key)
+        print("confluence_parent_page:", confluence_parent_page)
+
+    app.connect('config-inited', on_config_inited)
