@@ -7,7 +7,7 @@ enable = true
 
 [tool.poetry]
 name = "mdsphinx"
-version = "1.9.1"
+version = "1.9.2"
 description = "Convert markdown to any output that Sphinx supports"
 authors = ["Adam Gagorik <adam.gagorik@gmail.com>"]
 readme = "README.md"
