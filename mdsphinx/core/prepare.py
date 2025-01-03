@@ -3,13 +3,19 @@ from __future__ import annotations
 import dataclasses
 import functools
 import shutil
+import textwrap
+from collections.abc import Callable
 from collections.abc import Generator
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Annotated
 from typing import Any
+from typing import cast
 from typing import ClassVar
 
+import networkx as nx
 from jinja2 import Environment
+from jinja2 import PackageLoader
 from jinja2 import StrictUndefined
 from jinja2_mermaid_extension import MermaidExtension
 from jinja2_mermaid_extension import TikZExtension
@@ -74,7 +80,11 @@ def prepare(
 
 @functools.lru_cache(maxsize=1)
 def env() -> Environment:
-    instance = Environment(undefined=StrictUndefined, extensions=[MermaidExtension, TikZExtension])
+    instance = Environment(
+        loader=PackageLoader("mdsphinx", "templates"), undefined=StrictUndefined, extensions=[MermaidExtension, TikZExtension]
+    )
+    instance.globals["underline"] = lambda s, c="=": f"{s.strip()}\n{c * len(s.strip())}"
+    instance.globals["indent"] = lambda s, w: textwrap.indent(str(s).strip(), w * " ")
     return instance
 
 
@@ -87,7 +97,9 @@ class Renderer:
 
     SOURCES: ClassVar[frozenset[str]] = frozenset({".md", ".markdown", ".rst", ".txt"})
     RESOURCES: ClassVar[frozenset[str]] = frozenset({".png", ".jpg", ".jpeg", ".gif", ".svg", ".pdf"})
-    EXCLUDED_NAMES: ClassVar[frozenset[str]] = frozenset({".git", ".github", ".vscode", "__pycache__", ".venv", "venv", ".idea"})
+    EXCLUDED_NAMES: ClassVar[frozenset[str]] = frozenset(
+        {".git", ".github", ".vscode", "__pycache__", ".venv", "venv", ".idea", "_static", "_templates"}
+    )
 
     @property
     def index(self) -> Path:
@@ -132,14 +144,69 @@ class Renderer:
         ):
             return
 
-        logger.info("creating: %s", self.index)
-        with self.index.open("w") as stream:
-            stream.write(".. only:: latex or builder_html\n\n")
-            stream.write("   Index\n")
-            stream.write("   =====\n\n")
-            stream.write(".. toctree::\n\n")
-            for path in os_sorted(self._get_index_paths(self.index.parent, recursive=True)):
-                stream.write(f"   {path.relative_to(self.index.parent).with_suffix('')}\n")
+        graph = self._make_source_graph(self.index.parent)
+        for node, data in graph.nodes(data=True):
+            if data["type"] == "D":
+                rendered = (
+                    env()
+                    .get_template("index.rst.jinja")
+                    .render(
+                        title=node.name,
+                        documents=os_sorted(
+                            [
+                                p if d["type"] == "S" else p.joinpath("index.rst")
+                                for p, d in (
+                                    (graph.nodes[child_node]["path"].relative_to(data["path"]), graph.nodes[child_node])
+                                    for child_node in cast(Callable[[Any], Iterable[Any]], graph.successors)(node)
+                                )
+                            ]
+                        ),
+                    )
+                )
+                index = data["path"].joinpath("index.rst")
+                logger.info("generate: %s", index)
+                with index.open("w") as stream:
+                    stream.write(rendered)
+
+    @classmethod
+    def _make_source_graph(cls, top: Path) -> nx.DiGraph:  # noqa: C901
+        graph = nx.DiGraph()
+
+        for root, dir_names, file_names in top.walk(top_down=True):
+            # ensure root node
+            if root not in graph:
+                graph.add_node(root, type="D", path=root)
+
+            # add valid dir nodes
+            dir_names[:] = [d for d in dir_names if d not in cls.EXCLUDED_NAMES]
+            for base in dir_names:
+                path = root / base
+                if path not in graph:
+                    graph.add_node(path, type="D", path=path)
+                    graph.add_edge(root, path)
+
+            # add valid source nodes
+            for base in file_names:
+                if base in {"index.md", "index.rst"}:
+                    continue
+
+                path = root / base
+                if path.suffix.lower() in cls.SOURCES:
+                    graph.add_node(path, type="S", path=path)
+                    graph.add_edge(root, path)
+
+        # prune directory with zero content
+        to_remove = set()
+        for node, data in graph.nodes(data=True):
+            if data["type"] == "D":
+                if not any(
+                    graph.nodes[n]["type"] == "S" for n in cast(Callable[[Any, Any], Iterable[Any]], nx.descendants)(graph, node)
+                ):
+                    to_remove.add(node)
+
+        graph.remove_nodes_from(to_remove)
+
+        return graph
 
     @classmethod
     def _get_index_paths(cls, top: Path, recursive: bool = False) -> Generator[Path]:
