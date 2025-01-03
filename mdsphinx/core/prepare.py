@@ -8,6 +8,7 @@ from collections.abc import Callable
 from collections.abc import Generator
 from collections.abc import Iterable
 from pathlib import Path
+from string import ascii_uppercase
 from typing import Annotated
 from typing import Any
 from typing import cast
@@ -83,9 +84,24 @@ def env() -> Environment:
     instance = Environment(
         loader=PackageLoader("mdsphinx", "templates"), undefined=StrictUndefined, extensions=[MermaidExtension, TikZExtension]
     )
-    instance.globals["underline"] = lambda s, c="=": f"{s.strip()}\n{c * len(s.strip())}"
-    instance.globals["indent"] = lambda s, w: textwrap.indent(str(s).strip(), w * " ")
+    instance.globals["indent"] = indent
+    instance.globals["titleize"] = titleize
     return instance
+
+
+C_LUT = ("#", "*", "=", "-", "^", "`", '"') + tuple(ascii_uppercase)
+
+
+def indent(s: str, width: int) -> str:
+    return textwrap.indent(str(s).strip(), width * " ")
+
+
+def titleize(s: str, c: str | int = 0, exclude_if: bool = False) -> str:
+    if exclude_if:
+        return ""
+
+    c = c if isinstance(c, str) else C_LUT[c % len(C_LUT)]
+    return f"{c * len(s.strip())}\n{s.strip()}\n{c * len(s.strip())}"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -151,16 +167,9 @@ class Renderer:
                     env()
                     .get_template("index.rst.jinja")
                     .render(
-                        title=node.name,
-                        documents=os_sorted(
-                            [
-                                p if d["type"] == "S" else p.joinpath("index.rst")
-                                for p, d in (
-                                    (graph.nodes[child_node]["path"].relative_to(data["path"]), graph.nodes[child_node])
-                                    for child_node in cast(Callable[[Any], Iterable[Any]], graph.successors)(node)
-                                )
-                            ]
-                        ),
+                        title=data["title"],
+                        depth=data["depth"],
+                        documents=os_sorted(self._get_documents(graph, node), key=lambda x: x[0]),
                     )
                 )
                 index = data["path"].joinpath("index.rst")
@@ -168,21 +177,40 @@ class Renderer:
                 with index.open("w") as stream:
                     stream.write(rendered)
 
-    @classmethod
-    def _make_source_graph(cls, top: Path) -> nx.DiGraph:  # noqa: C901
+    @staticmethod
+    def _get_documents(graph: nx.DiGraph, top_node: Path) -> Any:
+        for fp in cast(Callable[[Any], Iterable[Any]], graph.successors)(top_node):
+            d = graph.nodes[fp]
+            if d["type"] == "S":
+                yield fp, d
+            elif d["type"] == "D":
+                yield fp.joinpath("index.rst"), d
+
+    def _make_source_graph(self, top: Path) -> nx.DiGraph:  # noqa: C901
         graph = nx.DiGraph()
 
         for root, dir_names, file_names in top.walk(top_down=True):
+            # get depth
+            depth = len(root.relative_to(top).parts)
+
             # ensure root node
             if root not in graph:
-                graph.add_node(root, type="D", path=root)
+                title = str(self.inp_root.name)
+                graph.add_node(root, type="D", path=root, depth=depth, title=title, target=root.with_suffix(""))
 
             # add valid dir nodes
-            dir_names[:] = [d for d in dir_names if d not in cls.EXCLUDED_NAMES]
+            dir_names[:] = [d for d in dir_names if d not in self.EXCLUDED_NAMES]
             for base in dir_names:
                 path = root / base
                 if path not in graph:
-                    graph.add_node(path, type="D", path=path)
+                    graph.add_node(
+                        path,
+                        type="D",
+                        path=path,
+                        depth=depth + 1,
+                        title=path.name,
+                        target=path.joinpath("index").relative_to(root),
+                    )
                     graph.add_edge(root, path)
 
             # add valid source nodes
@@ -191,8 +219,15 @@ class Renderer:
                     continue
 
                 path = root / base
-                if path.suffix.lower() in cls.SOURCES:
-                    graph.add_node(path, type="S", path=path)
+                if path.suffix.lower() in self.SOURCES:
+                    graph.add_node(
+                        path,
+                        type="S",
+                        path=path,
+                        depth=depth + 1,
+                        title=path.with_suffix("").name,
+                        target=path.relative_to(root).with_suffix(""),
+                    )
                     graph.add_edge(root, path)
 
         # prune directory with zero content

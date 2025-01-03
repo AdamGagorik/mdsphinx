@@ -1,12 +1,10 @@
-.. only:: latex or builder_html
-
-{{ indent(underline(title, "="), 3) }}
+{{ titleize(title, depth) }}
 
 .. toctree::
    :titlesonly:
    :maxdepth: 10
 {{ "" }}
-{%- for doc in documents %}
-{{ indent("{name} <{stem}>".format(doc=doc, name=doc.name, stem=doc.with_suffix('')), 3) }}
+{%- for path, doc in documents %}
+{{ indent("{title} <{target}>".format(title=doc['title'], target=doc['target']), 3) }}
 {%- endfor %}
 {{ "" }}

@@ -149,6 +149,7 @@ def process(  # noqa: C901
         builder.name,
         out_root.joinpath("source"),
         out_root.joinpath("build", format_key.value),
+        *(("--tag", "is_single_page") if builder_key == "single.page" else ()),
     )
     # fmt: on
 
