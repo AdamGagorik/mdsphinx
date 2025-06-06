@@ -112,7 +112,7 @@ class Renderer:
     context: dict[str, Any] = dataclasses.field(default_factory=dict)
 
     SOURCES: ClassVar[frozenset[str]] = frozenset({".md", ".markdown", ".rst", ".txt"})
-    RESOURCES: ClassVar[frozenset[str]] = frozenset({".png", ".jpg", ".jpeg", ".gif", ".svg", ".pdf"})
+    RESOURCES: ClassVar[frozenset[str]] = frozenset({".png", ".jpg", ".jpeg", ".gif", ".svg", ".pdf", ".html"})
     EXCLUDED_NAMES: ClassVar[frozenset[str]] = frozenset(
         {".git", ".github", ".vscode", "__pycache__", ".venv", "venv", ".idea", "_static", "_templates"}
     )
