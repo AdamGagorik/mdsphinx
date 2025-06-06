@@ -10,7 +10,7 @@ poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
 
 [tool.poetry]
 name = "mdsphinx"
-version = "1.9.2"
+version = "1.10.0"
 description = "Convert markdown to any output that Sphinx supports"
 authors = ["Adam Gagorik <adam.gagorik@gmail.com>"]
 readme = "README.md"
